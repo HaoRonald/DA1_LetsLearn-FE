@@ -33,9 +33,8 @@ export default function LoginPage() {
       console.log('DEBUG: Normalized role:', role);
 
       let targetPath = "/";
-      if (role === "Admin" || role === "Teacher") {
-        targetPath = "/dashboard";
-      }
+      // Both Teacher and Learner go to home page "/"
+      // Role-specific content is rendered on the home page itself
       
       console.log(`DEBUG: Final Target Path: ${targetPath}`);
       

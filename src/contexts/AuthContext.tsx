@@ -26,6 +26,7 @@ const normalizeUser = (user: any): User => {
     email: user.email || user.Email,
     role: user.role || user.Role,
     avatar: user.avatar || user.Avatar,
+    enrollments: user.enrollments || user.Enrollments || [],
   };
 };
 

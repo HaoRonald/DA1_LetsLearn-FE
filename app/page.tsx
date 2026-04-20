@@ -10,6 +10,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { useRouter } from 'next/navigation';
 import { courseApi, CourseResponse } from '@/services/courseService';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 // ── Teacher view: courses they created ──────────────────────────────────────
 function TeacherCourseCard({
@@ -121,6 +122,22 @@ function LearnerCourseCard({
   isEnrolled: boolean;
   onClick: () => void;
 }) {
+  const [isJoining, setIsJoining] = useState(false);
+
+  const handleEnrollClick = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevents the card from redirecting
+    setIsJoining(true);
+    try {
+      await courseApi.join(course.id);
+      toast.success("Enrolled successfully!");
+      window.location.reload(); // Refresh the page to update enrollment state across the UI
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to enroll");
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
   return (
     <div
       onClick={onClick}
@@ -188,8 +205,20 @@ function LearnerCourseCard({
               {course.creator?.username || 'Instructor'}
             </span>
           </div>
-          <div className="text-[15px] font-black text-[#1F2937]">
-            {course.price ? `$${course.price}` : 'FREE'}
+          
+          <div className="flex items-center gap-3">
+            <div className="text-[15px] font-black text-[#1F2937]">
+              {course.price ? `$${course.price}` : 'FREE'}
+            </div>
+            {!isEnrolled && (
+              <button 
+                onClick={handleEnrollClick}
+                disabled={isJoining}
+                className="px-3 py-1.5 bg-[#F97316] text-white text-[12px] font-bold rounded-lg shadow-sm hover:bg-[#EA580C] hover:shadow transition-all disabled:opacity-50"
+              >
+                {isJoining ? "..." : "Enroll Now"}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -261,12 +290,9 @@ export default function HomePage() {
   }, [isAuthenticated, user, fetchCourses]);
 
   // ── Enrolled course IDs (for learner badge) ───────────────────────────────
-  // The /User/me response includes enrollments, but AuthContext only stores basic User.
-  // We can check course.students array for the current user's id.
+  // Get the enrolled courses from the user's profile
   const enrolledCourseIds = new Set(
-    courses
-      .filter((c) => c.students?.some((s) => s.id === user?.id))
-      .map((c) => c.id)
+    user?.enrollments?.map((e) => e.courseId) || []
   );
 
   // ── Filter + search ───────────────────────────────────────────────────────

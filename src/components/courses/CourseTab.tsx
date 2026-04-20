@@ -24,7 +24,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { CourseResponse, TopicResponse, courseApi } from "@/services/courseService";
+import {
+  CourseResponse,
+  TopicResponse,
+  courseApi,
+} from "@/services/courseService";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -40,7 +44,9 @@ export function CourseTab({ course }: CourseTabProps) {
   const { user } = useAuth();
   const [isEditMode, setIsEditMode] = useState(false);
   const [showCourseModal, setShowCourseModal] = useState(false);
-  const [activeSectionIdForTopic, setActiveSectionIdForTopic] = useState<string | null>(null);
+  const [activeSectionIdForTopic, setActiveSectionIdForTopic] = useState<
+    string | null
+  >(null);
   const [showSectionModal, setShowSectionModal] = useState(false);
 
   const [isJoining, setIsJoining] = useState(false);
@@ -61,7 +67,9 @@ export function CourseTab({ course }: CourseTabProps) {
     description: "",
   });
 
-  const hasEditPermission = user?.role === "Admin" || (user?.role === "Teacher" && course.creatorId === user?.id);
+  const hasEditPermission =
+    user?.role === "Admin" ||
+    (user?.role === "Teacher" && course.creatorId === user?.id);
   const isEnrolled =
     course.students?.some((s) => s.id === user?.id) ||
     hasEditPermission ||
@@ -165,11 +173,17 @@ export function CourseTab({ course }: CourseTabProps) {
   };
 
   const handleTopicClick = (topic: TopicResponse) => {
-    if (topic.type === "assignment") {
-      router.push(`/assignments/${topic.id}`);
-    } else if (topic.type === "quiz") {
-      router.push(`/quizzes/${topic.id}`);
-    } else if (topic.type === "meeting") {
+    if (!isEnrolled) {
+      toast.error("Please join the course first to view this content!");
+      return;
+    }
+
+    const type = topic.type?.toLowerCase();
+    if (type === "assignment") {
+      router.push(`/assignments/${topic.id}?courseId=${course.id}`);
+    } else if (type === "quiz") {
+      router.push(`/quizzes/${topic.id}?courseId=${course.id}`);
+    } else if (type === "meeting") {
       // Handle meeting link or room
     }
   };
@@ -229,14 +243,20 @@ export function CourseTab({ course }: CourseTabProps) {
               {course.students?.slice(0, 3).map((student, idx) => (
                 <img
                   key={student.id || idx}
-                  src={student.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.fullName || 'S')}&background=random`}
+                  src={
+                    student.avatar ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(student.username || "S")}&background=random`
+                  }
                   className="w-8 h-8 rounded-full border-2 border-white bg-gray-200"
-                  alt={student.fullName || "Student"}
-                  title={student.fullName || "Student"}
+                  alt={student.username || "Student"}
+                  title={student.username || "Student"}
                 />
               ))}
               {(course.students?.length || 0) > 0 && (
-                <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white flex items-center justify-center text-[10px] font-bold" title="Total students">
+                <div
+                  className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white flex items-center justify-center text-[10px] font-bold"
+                  title="Total students"
+                >
                   {course.students?.length}
                 </div>
               )}
@@ -616,7 +636,7 @@ export function CourseTab({ course }: CourseTabProps) {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             {/* Tabs */}
             <div className="px-6 flex items-center gap-6 border-b border-gray-100">
               <button className="py-3 text-[14px] font-bold text-[#3B82F6] border-b-2 border-[#3B82F6]">
@@ -636,32 +656,62 @@ export function CourseTab({ course }: CourseTabProps) {
                   {
                     name: "Assignment",
                     type: "assignment",
-                    icon: <FileUp className="w-7 h-7 text-[#8B5CF6]" strokeWidth={1.5} />,
+                    icon: (
+                      <FileUp
+                        className="w-7 h-7 text-[#8B5CF6]"
+                        strokeWidth={1.5}
+                      />
+                    ),
                   },
                   {
                     name: "Quiz",
                     type: "quiz",
-                    icon: <ListChecks className="w-7 h-7 text-[#EC4899]" strokeWidth={1.5} />,
+                    icon: (
+                      <ListChecks
+                        className="w-7 h-7 text-[#EC4899]"
+                        strokeWidth={1.5}
+                      />
+                    ),
                   },
                   {
                     name: "Meeting",
                     type: "meeting",
-                    icon: <Video className="w-7 h-7 text-[#3B82F6]" strokeWidth={1.5} />,
+                    icon: (
+                      <Video
+                        className="w-7 h-7 text-[#3B82F6]"
+                        strokeWidth={1.5}
+                      />
+                    ),
                   },
                   {
                     name: "File",
                     type: "file",
-                    icon: <FileText className="w-7 h-7 text-[#3B82F6]" strokeWidth={1.5} />,
+                    icon: (
+                      <FileText
+                        className="w-7 h-7 text-[#3B82F6]"
+                        strokeWidth={1.5}
+                      />
+                    ),
                   },
                   {
                     name: "Link",
                     type: "link",
-                    icon: <LinkIcon className="w-7 h-7 text-[#10B981]" strokeWidth={1.5} />,
+                    icon: (
+                      <LinkIcon
+                        className="w-7 h-7 text-[#10B981]"
+                        strokeWidth={1.5}
+                      />
+                    ),
                   },
                   {
                     name: "Page",
                     type: "page",
-                    icon: <FileText className="w-7 h-7 text-[#EC4899]" strokeWidth={1.5} />,
+                    icon: (
+                      <FileText
+                        className="w-7 h-7 text-[#EC4899]"
+                        strokeWidth={1.5}
+                      />
+                    ),
                   },
                 ].map((opt) => (
                   <button
@@ -670,9 +720,7 @@ export function CourseTab({ course }: CourseTabProps) {
                     onClick={() => handleCreateTopic(opt.type)}
                     className="flex flex-col items-center justify-center p-4 h-28 border border-gray-200 hover:border-[#3B82F6] hover:bg-blue-50/30 rounded-2xl transition-all hover:shadow-sm disabled:opacity-50"
                   >
-                    <div className="mb-2">
-                      {opt.icon}
-                    </div>
+                    <div className="mb-2">{opt.icon}</div>
                     <span className="text-[14px] font-medium text-gray-600">
                       {opt.name}
                     </span>

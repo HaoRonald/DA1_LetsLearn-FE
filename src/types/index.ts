@@ -5,6 +5,7 @@ export interface User {
   email: string;
   role?: string;
   avatar?: string;
+  enrollments?: Array<{ courseId: string; joinDate: string }>;
 }
 
 export interface AuthState {
