@@ -111,33 +111,33 @@ export default function AssignmentDetailPage() {
             
             {/* Tabs List matches the design exactly */}
             {isTeacher ? (
-              <div className="border-b-[2px] border-white/20 w-full overflow-hidden">
-                <TabsList variant="line" className="bg-transparent p-0 flex h-auto overflow-x-auto overflow-y-hidden gap-8 justify-start w-full">
+              <div className="border-b-[2px] border-white/20 w-full overflow-x-auto scrollbar-hide">
+                <TabsList variant="line" className="bg-transparent p-0 flex h-auto overflow-x-auto overflow-y-hidden gap-6 md:gap-8 justify-start w-full min-w-max">
                   
                   <TabsTrigger 
                     value="assignment" 
-                    className="flex-none px-1 py-3 text-[14px] font-bold text-white/70 hover:text-white data-active:text-white data-active:after:bg-white rounded-none transition-all !bg-transparent !shadow-none"
+                    className="flex-none px-1 py-3 text-[13px] md:text-[14px] font-bold text-white/70 hover:text-white data-active:text-white data-active:after:bg-white rounded-none transition-all !bg-transparent !shadow-none"
                   >
                     Assignment
                   </TabsTrigger>
                   
                   <TabsTrigger 
                     value="settings" 
-                    className="flex-none px-1 py-3 text-[14px] font-bold text-white/70 hover:text-white data-active:text-white data-active:after:bg-white rounded-none transition-all !bg-transparent !shadow-none"
+                    className="flex-none px-1 py-3 text-[13px] md:text-[14px] font-bold text-white/70 hover:text-white data-active:text-white data-active:after:bg-white rounded-none transition-all !bg-transparent !shadow-none"
                   >
                     Settings
                   </TabsTrigger>
                   
                   <TabsTrigger 
                     value="submissions" 
-                    className="flex-none px-1 py-3 text-[14px] font-bold text-white/70 hover:text-white data-active:text-white data-active:after:bg-white rounded-none transition-all !bg-transparent !shadow-none"
+                    className="flex-none px-1 py-3 text-[13px] md:text-[14px] font-bold text-white/70 hover:text-white data-active:text-white data-active:after:bg-white rounded-none transition-all !bg-transparent !shadow-none"
                   >
-                    Submissions
+                    Results
                   </TabsTrigger>
 
                   <TabsTrigger 
                     value="dashboard" 
-                    className="flex-none px-1 py-3 text-[14px] font-bold text-white/70 hover:text-white data-active:text-white data-active:after:bg-white rounded-none transition-all !bg-transparent !shadow-none"
+                    className="flex-none px-1 py-3 text-[13px] md:text-[14px] font-bold text-white/70 hover:text-white data-active:text-white data-active:after:bg-white rounded-none transition-all !bg-transparent !shadow-none"
                   >
                     Dashboard
                   </TabsTrigger>

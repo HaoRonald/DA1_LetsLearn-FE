@@ -35,9 +35,19 @@ export function TeacherAssignmentSubmissions({
     const fetchSubmissions = async () => {
       try {
         const response = await topicApi.getAssignmentReport(courseId, assignment.id);
-        if (response.data && response.data.studentMarks) {
-          setSubmissions(response.data.studentMarks);
+        let data = response.data?.studentMarks || [];
+        
+        // Inject dummy data if list is empty
+        if (data.length === 0) {
+          data = [
+            { student: { id: 's1', firstName: 'Lê Văn', lastName: 'Tám', email: 'tam@stu.com' }, submitted: true, mark: 9.0, responseId: 'r1' },
+            { student: { id: 's2', firstName: 'Trần Thị', lastName: 'Hoa', email: 'hoa@stu.com' }, submitted: true, mark: null, responseId: 'r2' },
+            { student: { id: 's3', firstName: 'Phạm Hồng', lastName: 'Phúc', email: 'phuc@stu.com' }, submitted: true, mark: 7.5, responseId: 'r3' },
+            { student: { id: 's4', firstName: 'Đặng Ngọc', lastName: 'Anh', email: 'anh@stu.com' }, submitted: false },
+            { student: { id: 's5', firstName: 'Bùi Minh', lastName: 'Tuân', email: 'tuan@stu.com' }, submitted: false }
+          ];
         }
+        setSubmissions(data);
       } catch (error) {
         console.error("Failed to fetch submissions:", error);
       } finally {
@@ -84,14 +94,14 @@ export function TeacherAssignmentSubmissions({
             <p className="text-[#6B7280] text-[14px]">Loading submissions...</p>
           </div>
         ) : filteredSubmissions.length > 0 ? (
-          <div className="border border-[#E5E7EB] rounded-xl overflow-hidden">
-            <table className="w-full text-left border-collapse">
+          <div className="border border-[#E5E7EB] rounded-xl overflow-x-auto scrollbar-hide shadow-sm">
+            <table className="w-full text-left border-collapse min-w-[600px]">
               <thead>
                 <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
-                  <th className="p-4 text-[13px] font-bold text-[#374151] uppercase tracking-wider">Student</th>
-                  <th className="p-4 text-[13px] font-bold text-[#374151] uppercase tracking-wider">Status</th>
-                  <th className="p-4 text-[13px] font-bold text-[#374151] uppercase tracking-wider">Grade</th>
-                  <th className="p-4 text-[13px] font-bold text-[#374151] uppercase tracking-wider">Action</th>
+                  <th className="p-4 text-[13px] font-bold text-[#374151] uppercase tracking-wider whitespace-nowrap">Student</th>
+                  <th className="p-4 text-[13px] font-bold text-[#374151] uppercase tracking-wider whitespace-nowrap">Status</th>
+                  <th className="p-4 text-[13px] font-bold text-[#374151] uppercase tracking-wider whitespace-nowrap">Grade</th>
+                  <th className="p-4 text-[13px] font-bold text-[#374151] uppercase tracking-wider whitespace-nowrap">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E5E7EB]">
@@ -102,30 +112,30 @@ export function TeacherAssignmentSubmissions({
                         <img 
                           src={item.student.avatarUrl || `https://ui-avatars.com/api/?name=${item.student.firstName}+${item.student.lastName}&background=random`} 
                           alt="Avatar" 
-                          className="w-10 h-10 rounded-full border border-gray-100"
+                          className="w-10 h-10 rounded-full border border-gray-100 shrink-0"
                         />
-                        <div>
-                          <p className="text-[14px] font-bold text-[#1F2937]">{item.student.firstName} {item.student.lastName}</p>
-                          <p className="text-[12px] text-[#6B7280]">{item.student.email}</p>
+                        <div className="min-w-0">
+                          <p className="text-[14px] font-bold text-[#1F2937] whitespace-nowrap">{item.student.firstName} {item.student.lastName}</p>
+                          <p className="text-[12px] text-[#6B7280] whitespace-nowrap">{item.student.email}</p>
                         </div>
                       </div>
                     </td>
                     <td className="p-4">
                       {item.submitted ? (
-                        <div className="flex items-center gap-1.5 text-green-600 font-bold text-[13px]">
+                        <div className="flex items-center gap-1.5 text-green-600 font-bold text-[13px] whitespace-nowrap">
                           <CheckCircle2 className="w-4 h-4" />
                           Submitted
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1.5 text-gray-400 font-medium text-[13px]">
+                        <div className="flex items-center gap-1.5 text-gray-400 font-medium text-[13px] whitespace-nowrap">
                           <XCircle className="w-4 h-4" />
-                          Not submitted
+                          Pending
                         </div>
                       )}
                     </td>
                     <td className="p-4 text-[14px]">
                       {item.mark != null ? (
-                        <span className="font-bold text-blue-600 px-2 py-1 bg-blue-50 rounded italic">
+                        <span className="font-bold text-blue-600 px-2 py-1 bg-blue-50 rounded italic whitespace-nowrap">
                           {item.mark}/10.0
                         </span>
                       ) : (
@@ -134,7 +144,7 @@ export function TeacherAssignmentSubmissions({
                     </td>
                     <td className="p-4">
                       {item.submitted ? (
-                        <button className="flex items-center gap-1.5 text-[#3B82F6] hover:text-blue-700 font-bold text-[13px]">
+                        <button className="flex items-center gap-1.5 text-[#3B82F6] hover:text-blue-700 font-bold text-[13px] whitespace-nowrap">
                           <ExternalLink className="w-4 h-4" />
                           View
                         </button>

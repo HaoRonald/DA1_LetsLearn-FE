@@ -25,6 +25,8 @@ export default function CreateCoursePage() {
   const [category, setCategory] = useState("Academic");
   const [level, setLevel] = useState("Beginner");
   const [visibility, setVisibility] = useState("private");
+  const [priceType, setPriceType] = useState<"free" | "paid">("free");
+  const [price, setPrice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -44,14 +46,19 @@ export default function CreateCoursePage() {
       setError("Course name is required");
       return;
     }
-    
+
+    if (priceType === "paid" && (!price.trim() || isNaN(Number(price)) || Number(price) <= 0)) {
+      setError("Please enter a valid price greater than 0");
+      return;
+    }
+
     setIsSubmitting(true);
     setError("");
 
     try {
       const id = crypto.randomUUID();
       const isPublished = visibility === "public";
-      
+
       await courseApi.create({
         id,
         title,
@@ -59,8 +66,9 @@ export default function CreateCoursePage() {
         category,
         level,
         isPublished,
+        price: priceType === "paid" ? Number(price) : 0,
       });
-      
+
       toast.success('Course created successfully!');
       router.push(`/courses/${id}`);
     } catch (err: any) {
@@ -134,6 +142,56 @@ export default function CreateCoursePage() {
                   </SelectContent>
                 </Select>
                 <p className="text-[13px] text-[#9CA3AF]">Only participants can access the course</p>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-[16px] font-bold text-[#374151]">Price</label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPriceType("free")}
+                    className={`flex-1 h-12 rounded-xl border text-[15px] font-medium transition-colors ${
+                      priceType === "free"
+                        ? "bg-[#3B82F6] border-[#3B82F6] text-white"
+                        : "bg-white border-[#E5E7EB] text-[#374151] hover:border-[#3B82F6]"
+                    }`}
+                  >
+                    Free
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPriceType("paid")}
+                    className={`flex-1 h-12 rounded-xl border text-[15px] font-medium transition-colors ${
+                      priceType === "paid"
+                        ? "bg-[#3B82F6] border-[#3B82F6] text-white"
+                        : "bg-white border-[#E5E7EB] text-[#374151] hover:border-[#3B82F6]"
+                    }`}
+                  >
+                    Paid
+                  </button>
+                </div>
+
+                {priceType === "paid" && (
+                  <div className="mt-2">
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF] text-[15px]">$</span>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="Enter price"
+                        className="h-12 pl-8 border-[#E5E7EB] rounded-xl text-[15px]"
+                        value={price}
+                        onChange={(e) => setPrice(e.target.value)}
+                      />
+                    </div>
+                    <p className="text-[13px] text-[#9CA3AF] mt-1">Set the price for students to enroll</p>
+                  </div>
+                )}
+
+                {priceType === "free" && (
+                  <p className="text-[13px] text-[#9CA3AF]">Students can enroll for free</p>
+                )}
               </div>
 
               {error && <p className="text-sm text-red-500 font-bold text-center">{error}</p>}

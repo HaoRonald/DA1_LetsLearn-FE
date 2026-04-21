@@ -5,6 +5,7 @@ import {
   BookOpen, Users, Star, Plus, Search, Filter,
   Globe, Lock, MoreVertical, Edit3, Eye, TrendingUp,
   GraduationCap, Loader2, ChevronRight, BarChart2,
+  X, CreditCard,
 } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useRouter } from 'next/navigation';
@@ -123,22 +124,46 @@ function LearnerCourseCard({
   onClick: () => void;
 }) {
   const [isJoining, setIsJoining] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const isPaidCourse = course.price && course.price > 0;
 
   const handleEnrollClick = async (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevents the card from redirecting
-    setIsJoining(true);
+    e.stopPropagation();
+    if (isPaidCourse) {
+      setShowPaymentModal(true);
+    } else {
+      setIsJoining(true);
+      try {
+        await courseApi.join(course.id);
+        toast.success("Enrolled successfully!");
+        window.location.reload();
+      } catch (err: any) {
+        toast.error(err.response?.data?.message || "Failed to enroll");
+      } finally {
+        setIsJoining(false);
+      }
+    }
+  };
+
+  const handlePayment = async (paymentMethod: string) => {
+    setIsProcessingPayment(true);
     try {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
       await courseApi.join(course.id);
-      toast.success("Enrolled successfully!");
-      window.location.reload(); // Refresh the page to update enrollment state across the UI
+      toast.success("Payment successful! You are now enrolled in this course.");
+      setShowPaymentModal(false);
+      window.location.reload();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to enroll");
+      console.error("Payment failed:", err);
+      toast.error(err.response?.data?.message || "Payment failed. Please try again.");
     } finally {
-      setIsJoining(false);
+      setIsProcessingPayment(false);
     }
   };
 
   return (
+    <>
     <div
       onClick={onClick}
       className="bg-white rounded-[24px] border border-[#F3F4F6] overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_14px_30px_-5px_rgba(0,0,0,0.12)] transition-all cursor-pointer group flex flex-col"
@@ -191,38 +216,140 @@ function LearnerCourseCard({
           {course.description || 'No description available for this course.'}
         </p>
 
-        <div className="mt-auto pt-4 border-t border-[#F3F4F6] flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="mt-auto pt-4 border-t border-[#F3F4F6] flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0 shrink">
             <img
               src={
                 course.creator?.avatar ||
                 `https://ui-avatars.com/api/?name=${course.creator?.username || 'U'}&background=random`
               }
-              className="w-7 h-7 rounded-full object-cover border border-gray-200"
+              className="w-7 h-7 rounded-full object-cover border border-gray-200 shrink-0"
               alt="Creator"
             />
-            <span className="text-[13px] font-semibold text-[#4B5563]">
+            <span className="text-[13px] font-semibold text-[#4B5563] truncate">
               {course.creator?.username || 'Instructor'}
             </span>
           </div>
-          
-          <div className="flex items-center gap-3">
-            <div className="text-[15px] font-black text-[#1F2937]">
+
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="text-[15px] font-black text-[#1F2937] whitespace-nowrap">
               {course.price ? `$${course.price}` : 'FREE'}
             </div>
             {!isEnrolled && (
-              <button 
+              <button
                 onClick={handleEnrollClick}
                 disabled={isJoining}
-                className="px-3 py-1.5 bg-[#F97316] text-white text-[12px] font-bold rounded-lg shadow-sm hover:bg-[#EA580C] hover:shadow transition-all disabled:opacity-50"
+                className="px-2 sm:px-3 py-1.5 bg-[#F97316] text-white text-[11px] sm:text-[12px] font-bold rounded-lg shadow-sm hover:bg-[#EA580C] hover:shadow transition-all disabled:opacity-50 flex items-center gap-1 whitespace-nowrap"
               >
-                {isJoining ? "..." : "Enroll Now"}
+                {isJoining ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : isPaidCourse ? (
+                  <>
+                    <CreditCard className="w-3 h-3" /> Buy
+                  </>
+                ) : (
+                  'Enroll'
+                )}
               </button>
             )}
           </div>
         </div>
       </div>
     </div>
+
+    {/* Payment Modal */}
+    {showPaymentModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="bg-white rounded-[24px] w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-300 overflow-hidden">
+          {/* Header */}
+          <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <h2 className="text-[#1F2937] font-bold text-[20px]">
+                Complete Payment
+              </h2>
+              <p className="text-[#6B7280] text-[14px] mt-1">
+                Secure payment for {course.title}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowPaymentModal(false)}
+              disabled={isProcessingPayment}
+              className="text-[#9CA3AF] hover:text-[#EF4444] hover:bg-red-50 p-2 rounded-xl transition-all disabled:opacity-50"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Order Summary */}
+          <div className="p-6 bg-[#F9FAFB]">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[#6B7280] text-[14px]">Instructor</span>
+              <span className="text-[#1F2937] font-medium text-[14px]">
+                {course.creator?.username || "Unknown"}
+              </span>
+            </div>
+            <div className="border-t border-gray-200 my-4"></div>
+            <div className="flex items-center justify-between">
+              <span className="text-[#1F2937] font-bold text-[16px]">Total</span>
+              <span className="text-[#F97316] font-black text-[28px]">
+                ${course.price}
+              </span>
+            </div>
+          </div>
+
+          {/* Payment Methods */}
+          <div className="p-6 space-y-4">
+            <p className="text-[#6B7280] text-[13px] font-medium uppercase tracking-wider">
+              Select payment method
+            </p>
+
+            {/* Credit Card Option */}
+            <button
+              onClick={() => handlePayment("credit_card")}
+              disabled={isProcessingPayment}
+              className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-[#3B82F6] hover:bg-blue-50/30 transition-all disabled:opacity-50"
+            >
+              <div className="w-12 h-12 bg-[#1F2937] rounded-xl flex items-center justify-center">
+                <CreditCard className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-bold text-[#1F2937] text-[15px]">Credit / Debit Card</p>
+                <p className="text-[#6B7280] text-[12px]">Visa, Mastercard, AMEX</p>
+              </div>
+            </button>
+
+            {/* PayPal Option */}
+            <button
+              onClick={() => handlePayment("paypal")}
+              disabled={isProcessingPayment}
+              className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-[#3B82F6] hover:bg-blue-50/30 transition-all disabled:opacity-50"
+            >
+              <div className="w-12 h-12 bg-[#003087] rounded-xl flex items-center justify-center">
+                <span className="text-white font-black text-[18px]">P</span>
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-bold text-[#1F2937] text-[15px]">PayPal</p>
+                <p className="text-[#6B7280] text-[12px]">Pay with your PayPal account</p>
+              </div>
+            </button>
+
+            {isProcessingPayment && (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-6 h-6 animate-spin text-[#3B82F6]" />
+                <span className="ml-2 text-[#6B7280] text-[14px]">Processing payment...</span>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-center gap-2 text-[#6B7280] text-[12px]">
+            <Lock className="w-3 h-3" />
+            <span>Your payment is secured with SSL encryption</span>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 

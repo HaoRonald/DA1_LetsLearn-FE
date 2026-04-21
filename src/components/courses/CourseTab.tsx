@@ -17,6 +17,10 @@ import {
   X,
   Check,
   ExternalLink,
+  CreditCard,
+  Lock,
+  Loader2,
+  Globe,
 } from "lucide-react";
 import {
   Accordion,
@@ -51,6 +55,10 @@ export function CourseTab({ course }: CourseTabProps) {
 
   const [isJoining, setIsJoining] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  const isPaidCourse = course.price && course.price > 0;
 
   // Forms
   const [courseForm, setCourseForm] = useState({
@@ -60,6 +68,8 @@ export function CourseTab({ course }: CourseTabProps) {
     category: course.category || "",
     level: course.level || "",
     imageUrl: course.imageUrl || "",
+    price: course.price || 0,
+    isPublished: course.isPublished ?? false,
   });
 
   const [sectionForm, setSectionForm] = useState({
@@ -99,10 +109,42 @@ export function CourseTab({ course }: CourseTabProps) {
     }
   };
 
+  const handleBuyNow = () => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    setShowPaymentModal(true);
+  };
+
+  const handlePayment = async (paymentMethod: string) => {
+    setIsProcessingPayment(true);
+    try {
+      // TODO: Integrate with actual payment API when backend is ready
+      // For now, simulate payment success and join course
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // After "payment" success, join the course
+      await courseApi.join(course.id);
+      toast.success("Payment successful! You are now enrolled in this course.");
+      setShowPaymentModal(false);
+      window.location.reload();
+    } catch (err: any) {
+      console.error("Payment failed:", err);
+      toast.error(err.response?.data?.message || "Payment failed. Please try again.");
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
   const handleSaveCourse = async () => {
     setIsSaving(true);
     try {
-      await courseApi.update(course.id, courseForm);
+      await courseApi.update(course.id, {
+        ...courseForm,
+        price: courseForm.price || 0,
+        isPublished: courseForm.isPublished,
+      });
       toast.success("Course details updated successfully!");
       window.location.reload();
     } catch (err: any) {
@@ -183,15 +225,21 @@ export function CourseTab({ course }: CourseTabProps) {
       router.push(`/assignments/${topic.id}?courseId=${course.id}`);
     } else if (type === "quiz") {
       router.push(`/quizzes/${topic.id}?courseId=${course.id}`);
+    } else if (type === "page") {
+      router.push(`/pages/${topic.id}?courseId=${course.id}`);
+    } else if (type === "file") {
+      router.push(`/files/${topic.id}?courseId=${course.id}`);
+    } else if (type === "link") {
+      router.push(`/links/${topic.id}?courseId=${course.id}`);
     } else if (type === "meeting") {
-      // Handle meeting link or room
+      router.push(`/meetings/${topic.id}?courseId=${course.id}`);
     }
   };
 
   return (
-    <div className="w-full relative pb-24">
+    <div className="w-full relative pb-24 px-4 sm:px-0">
       {/* Banner */}
-      <div className="relative w-full h-[240px] md:h-[320px] rounded-[24px] overflow-hidden mb-8 shadow-md group">
+      <div className="relative w-full h-[200px] sm:h-[240px] md:h-[320px] rounded-[24px] overflow-hidden mb-8 shadow-md group">
         <img
           src={
             course.imageUrl ||
@@ -203,36 +251,36 @@ export function CourseTab({ course }: CourseTabProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
 
         {hasEditPermission && (
-          <div className="absolute top-6 right-6">
+          <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
             <button
               onClick={() => setShowCourseModal(true)}
-              className="flex items-center gap-2 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-xl text-[#3B82F6] font-bold text-[14px] shadow-sm hover:bg-white transition-all transform hover:scale-105"
+              className="flex items-center gap-2 bg-white/90 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-[#3B82F6] font-bold text-[12px] sm:text-[14px] shadow-sm hover:bg-white transition-all transform hover:scale-105"
             >
               <Edit3 className="w-4 h-4" /> Customize
             </button>
           </div>
         )}
 
-        <div className="absolute bottom-6 left-8 right-8 flex items-end justify-between text-white">
+        <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-8 sm:right-8 flex flex-col sm:flex-row sm:items-end justify-between text-white gap-4">
           <div className="flex-1">
             <div className="mb-2">
-              <span className="px-3 py-1 bg-[#3B82F6] rounded-full text-[12px] font-bold uppercase tracking-wider">
+              <span className="px-2 py-0.5 sm:px-3 sm:py-1 bg-[#3B82F6] rounded-full text-[10px] sm:text-[12px] font-bold uppercase tracking-wider">
                 {course.category || "Course"}
               </span>
             </div>
-            <h1 className="text-[32px] md:text-[44px] font-bold leading-tight mb-1">
+            <h1 className="text-[24px] sm:text-[32px] md:text-[44px] font-bold leading-tight mb-1 line-clamp-2">
               {course.title}
             </h1>
-            <p className="text-[16px] md:text-[18px] font-medium opacity-90 max-w-2xl line-clamp-2">
+            <p className="hidden sm:block text-[16px] md:text-[18px] font-medium opacity-90 max-w-2xl line-clamp-2">
               {course.description}
             </p>
           </div>
-          <div className="hidden md:flex flex-col items-end gap-3">
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20">
-              <span className="text-[13px] font-medium text-white/70">
-                Course ID:
+          <div className="flex flex-row sm:flex-col items-center sm:items-end gap-3">
+            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-white/20">
+              <span className="hidden xs:inline text-[11px] sm:text-[13px] font-medium text-white/70">
+                ID:
               </span>
-              <span className="font-bold tracking-wide text-white">
+              <span className="text-[12px] sm:text-[14px] font-bold tracking-wide text-white">
                 {course.id.substring(0, 8)}...
               </span>
               <button className="hover:text-[#60A5FA] transition-colors">
@@ -247,14 +295,14 @@ export function CourseTab({ course }: CourseTabProps) {
                     student.avatar ||
                     `https://ui-avatars.com/api/?name=${encodeURIComponent(student.username || "S")}&background=random`
                   }
-                  className="w-8 h-8 rounded-full border-2 border-white bg-gray-200"
+                  className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 border-white bg-gray-200"
                   alt={student.username || "Student"}
                   title={student.username || "Student"}
                 />
               ))}
               {(course.students?.length || 0) > 0 && (
                 <div
-                  className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white flex items-center justify-center text-[10px] font-bold"
+                  className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white flex items-center justify-center text-[9px] sm:text-[10px] font-bold"
                   title="Total students"
                 >
                   {course.students?.length}
@@ -265,28 +313,36 @@ export function CourseTab({ course }: CourseTabProps) {
         </div>
       </div>
 
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-[20px] font-bold text-[#374151]">Course Content</h2>
-        <div className="flex items-center gap-4">
-          <button className="text-[14px] font-bold text-[#3B82F6] hover:underline underline-offset-4">
+      <div className="flex flex-col xs:flex-row justify-between xs:items-center gap-4 mb-6">
+        <h2 className="text-[18px] sm:text-[20px] font-bold text-[#374151]">Course Content</h2>
+        <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-hide pb-1">
+          <button className="text-[12px] sm:text-[14px] font-bold text-[#3B82F6] hover:underline underline-offset-4 whitespace-nowrap">
             Collapse all
           </button>
           {hasEditPermission && (
             <button
               onClick={() => setIsEditMode(!isEditMode)}
-              className={`px-4 py-1.5 rounded-lg text-[13px] font-bold transition-all ${isEditMode ? "bg-[#3B82F6] text-white" : "bg-gray-100 text-[#6B7280] hover:bg-gray-200"}`}
+              className={`px-3 py-1 sm:px-4 sm:py-1.5 rounded-lg text-[12px] sm:text-[13px] font-bold transition-all whitespace-nowrap ${isEditMode ? "bg-[#3B82F6] text-white" : "bg-gray-100 text-[#6B7280] hover:bg-gray-200"}`}
             >
-              {isEditMode ? "Editing Mode" : "Edit content"}
+              {isEditMode ? "Editing" : "Edit content"}
             </button>
           )}
           {!isEnrolled && user?.role === "Learner" && (
-            <button
-              onClick={handleJoin}
-              disabled={isJoining}
-              className="px-6 py-2 bg-[#F97316] text-white rounded-lg text-[14px] font-bold shadow-md hover:bg-[#EA580C] hover:shadow-lg transition-all"
-            >
-              {isJoining ? "Joining..." : "Join Course"}
-            </button>
+            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+              {isPaidCourse && (
+                <span className="text-[14px] sm:text-[18px] font-bold text-[#F97316] whitespace-nowrap">
+                  ${course.price}
+                </span>
+              )}
+              <button
+                onClick={isPaidCourse ? handleBuyNow : handleJoin}
+                disabled={isJoining}
+                className="px-3 sm:px-4 py-2 bg-[#F97316] text-white text-[12px] sm:text-[14px] font-bold rounded-lg shadow-md hover:bg-[#EA580C] hover:shadow-lg transition-all flex items-center gap-2 whitespace-nowrap"
+              >
+                <CreditCard className="w-4 h-4 hidden xs:block" />
+                {isJoining ? "..." : isPaidCourse ? "Buy Now" : "Join"}
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -446,6 +502,8 @@ export function CourseTab({ course }: CourseTabProps) {
                     category: course.category || "",
                     level: course.level || "",
                     imageUrl: course.imageUrl || "",
+                    price: course.price || 0,
+                    isPublished: course.isPublished ?? false,
                   });
                 }}
                 className="text-[#9CA3AF] hover:text-[#EF4444] hover:bg-red-50 p-2 rounded-xl transition-all"
@@ -525,6 +583,63 @@ export function CourseTab({ course }: CourseTabProps) {
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-[14px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               </div>
+              <div className="space-y-2">
+                <label className="text-[14px] font-bold text-[#374151]">
+                  Price (USD)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6B7280] text-[14px]">$</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={courseForm.price || ""}
+                    onChange={(e) =>
+                      setCourseForm({ ...courseForm, price: parseFloat(e.target.value) || 0 })
+                    }
+                    placeholder="0.00"
+                    className="w-full border border-gray-200 rounded-xl pl-8 pr-4 py-3 text-[14px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <p className="text-[#9CA3AF] text-[12px]">Set 0 for free course</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[14px] font-bold text-[#374151]">
+                  Visibility
+                </label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setCourseForm({ ...courseForm, isPublished: true })}
+                    className={`flex-1 h-12 rounded-xl border text-[14px] font-medium transition-all flex items-center justify-center gap-2 ${
+                      courseForm.isPublished
+                        ? "bg-[#10B981] border-[#10B981] text-white"
+                        : "bg-white border-gray-200 text-[#6B7280] hover:border-[#10B981]"
+                    }`}
+                  >
+                    <Globe className="w-4 h-4" />
+                    Public
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCourseForm({ ...courseForm, isPublished: false })}
+                    className={`flex-1 h-12 rounded-xl border text-[14px] font-medium transition-all flex items-center justify-center gap-2 ${
+                      !courseForm.isPublished
+                        ? "bg-[#6B7280] border-[#6B7280] text-white"
+                        : "bg-white border-gray-200 text-[#6B7280] hover:border-[#6B7280]"
+                    }`}
+                  >
+                    <Lock className="w-4 h-4" />
+                    Private
+                  </button>
+                </div>
+                <p className="text-[#9CA3AF] text-[12px]">
+                  {courseForm.isPublished
+                    ? "Anyone can find and enroll in this course"
+                    : "Only people with the course link can enroll"}
+                </p>
+              </div>
             </div>
             <div className="p-6 border-t border-gray-100 bg-gray-50 shrink-0 flex justify-end gap-3">
               <button
@@ -537,6 +652,8 @@ export function CourseTab({ course }: CourseTabProps) {
                     category: course.category || "",
                     level: course.level || "",
                     imageUrl: course.imageUrl || "",
+                    price: course.price || 0,
+                    isPublished: course.isPublished ?? false,
                   });
                 }}
                 className="px-5 py-2.5 text-gray-500 font-bold hover:bg-gray-200 rounded-xl transition-colors"
@@ -727,6 +844,123 @@ export function CourseTab({ course }: CourseTabProps) {
                   </button>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Payment Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-[24px] w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-300 overflow-hidden">
+            {/* Header */}
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-[#1F2937] font-bold text-[20px]">
+                  Complete Payment
+                </h2>
+                <p className="text-[#6B7280] text-[14px] mt-1">
+                  Secure payment for {course.title}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                disabled={isProcessingPayment}
+                className="text-[#9CA3AF] hover:text-[#EF4444] hover:bg-red-50 p-2 rounded-xl transition-all disabled:opacity-50"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Order Summary */}
+            <div className="p-6 bg-[#F9FAFB]">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[#6B7280] text-[14px]">Course</span>
+                <span className="text-[#1F2937] font-medium text-[14px] max-w-[200px] truncate">
+                  {course.title}
+                </span>
+              </div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[#6B7280] text-[14px]">Instructor</span>
+                <span className="text-[#1F2937] font-medium text-[14px]">
+                  {course.creator?.username || "Unknown"}
+                </span>
+              </div>
+              <div className="border-t border-gray-200 my-4"></div>
+              <div className="flex items-center justify-between">
+                <span className="text-[#1F2937] font-bold text-[16px]">Total</span>
+                <span className="text-[#F97316] font-black text-[28px]">
+                  ${course.price}
+                </span>
+              </div>
+            </div>
+
+            {/* Payment Methods */}
+            <div className="p-6 space-y-4">
+              <p className="text-[#6B7280] text-[13px] font-medium uppercase tracking-wider">
+                Select payment method
+              </p>
+
+              {/* Credit Card Option */}
+              <button
+                onClick={() => handlePayment("credit_card")}
+                disabled={isProcessingPayment}
+                className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-[#3B82F6] hover:bg-blue-50/30 transition-all disabled:opacity-50"
+              >
+                <div className="w-12 h-12 bg-[#1F2937] rounded-xl flex items-center justify-center">
+                  <CreditCard className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-bold text-[#1F2937] text-[15px]">Credit / Debit Card</p>
+                  <p className="text-[#6B7280] text-[12px]">Visa, Mastercard, AMEX</p>
+                </div>
+                <div className="flex gap-1">
+                  <div className="w-8 h-5 bg-[#1A1F71] rounded"></div>
+                  <div className="w-8 h-5 bg-[#EB001B] rounded-l"></div>
+                </div>
+              </button>
+
+              {/* PayPal Option */}
+              <button
+                onClick={() => handlePayment("paypal")}
+                disabled={isProcessingPayment}
+                className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-[#3B82F6] hover:bg-blue-50/30 transition-all disabled:opacity-50"
+              >
+                <div className="w-12 h-12 bg-[#003087] rounded-xl flex items-center justify-center">
+                  <span className="text-white font-black text-[18px]">P</span>
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-bold text-[#1F2937] text-[15px]">PayPal</p>
+                  <p className="text-[#6B7280] text-[12px]">Pay with your PayPal account</p>
+                </div>
+              </button>
+
+              {/* Bank Transfer Option */}
+              <button
+                onClick={() => handlePayment("bank_transfer")}
+                disabled={isProcessingPayment}
+                className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-[#3B82F6] hover:bg-blue-50/30 transition-all disabled:opacity-50"
+              >
+                <div className="w-12 h-12 bg-[#10B981] rounded-xl flex items-center justify-center">
+                  <span className="text-white font-black text-[16px]">BT</span>
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-bold text-[#1F2937] text-[15px]">Bank Transfer</p>
+                  <p className="text-[#6B7280] text-[12px]">Direct bank payment</p>
+                </div>
+              </button>
+
+              {isProcessingPayment && (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="w-6 h-6 animate-spin text-[#3B82F6]" />
+                  <span className="ml-2 text-[#6B7280] text-[14px]">Processing payment...</span>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-center gap-2 text-[#6B7280] text-[12px]">
+              <Lock className="w-3 h-3" />
+              <span>Your payment is secured with SSL encryption</span>
             </div>
           </div>
         </div>

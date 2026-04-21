@@ -8,10 +8,21 @@ export interface QuizAnswerRequest {
 
 export interface CreateQuizResponseRequest {
   topicId: string;
-  status: 'In Progress' | 'Finished';
-  startedAt?: string;
-  completedAt?: string;
-  answers: QuizAnswerRequest[];
+  data: {
+    status: 'In Progress' | 'Finished';
+    startedAt?: string;
+    completedAt?: string;
+    answers: QuizAnswerRequest[];
+  };
+}
+
+export interface UpdateQuizResponseRequest {
+  data: {
+    status: 'In Progress' | 'Finished';
+    startedAt?: string;
+    completedAt?: string;
+    answers: QuizAnswerRequest[];
+  };
 }
 
 export interface QuizResponseDTO {
@@ -33,6 +44,9 @@ export interface QuizResponseDTO {
 export const quizResponseApi = {
   create: (topicId: string, data: CreateQuizResponseRequest) =>
     axiosInstance.post<QuizResponseDTO>(`/topic/${topicId}/quiz-response`, data),
+
+  update: (topicId: string, responseId: string, data: UpdateQuizResponseRequest) =>
+    axiosInstance.put<QuizResponseDTO>(`/topic/${topicId}/quiz-response/${responseId}`, data),
     
   getByTopic: (topicId: string) =>
     axiosInstance.get<QuizResponseDTO[]>(`/topic/${topicId}/quiz-response`),

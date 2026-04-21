@@ -65,33 +65,33 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
         <Tabs defaultValue="course" className="w-full flex-1 flex flex-col">
           
           {/* Header sticky block for the tabs */}
-          <div className="w-full border-b border-[#E5E7EB] bg-white sticky top-0 z-10 pt-2 px-6 lg:px-8">
-            <TabsList className="bg-transparent h-auto p-0 flex gap-8 justify-start">
+          <div className="w-full border-b border-[#E5E7EB] bg-white sticky top-0 z-10 pt-2 px-4 md:px-6 lg:px-8 overflow-x-auto scrollbar-hide">
+            <TabsList className="bg-transparent h-auto p-0 flex gap-4 md:gap-8 justify-start min-w-max">
               
               <TabsTrigger 
                 value="course" 
-                className="flex-none w-auto bg-transparent h-auto px-2 pb-1.5 pt-1 text-[14px] font-bold text-[#9CA3AF] hover:text-[#6B7280] data-[state=active]:text-[#3B82F6] data-[state=active]:bg-transparent data-[state=active]:border-b-[3px] data-[state=active]:border-[#3B82F6] data-[state=active]:shadow-none rounded-sm transition-all"
+                className="flex-none w-auto bg-transparent h-auto px-2 pb-1.5 pt-1 text-[13px] md:text-[14px] font-bold text-[#9CA3AF] hover:text-[#6B7280] data-[state=active]:text-[#3B82F6] data-[state=active]:bg-transparent data-[state=active]:border-b-[3px] data-[state=active]:border-[#3B82F6] data-[state=active]:shadow-none rounded-sm transition-all"
               >
                 Course
               </TabsTrigger>
               
               <TabsTrigger 
                 value="activities" 
-                className="flex-none w-auto bg-transparent h-auto px-2 pb-1.5 pt-1 text-[14px] font-bold text-[#9CA3AF] hover:text-[#6B7280] data-[state=active]:text-[#3B82F6] data-[state=active]:bg-transparent data-[state=active]:border-b-[3px] data-[state=active]:border-[#3B82F6] data-[state=active]:shadow-none rounded-sm transition-all"
+                className="flex-none w-auto bg-transparent h-auto px-2 pb-1.5 pt-1 text-[13px] md:text-[14px] font-bold text-[#9CA3AF] hover:text-[#6B7280] data-[state=active]:text-[#3B82F6] data-[state=active]:bg-transparent data-[state=active]:border-b-[3px] data-[state=active]:border-[#3B82F6] data-[state=active]:shadow-none rounded-sm transition-all"
               >
                 Activities
               </TabsTrigger>
               
               <TabsTrigger 
                 value="people" 
-                className="flex-none w-auto bg-transparent h-auto px-2 pb-1.5 pt-1 text-[14px] font-bold text-[#9CA3AF] hover:text-[#6B7280] data-[state=active]:text-[#3B82F6] data-[state=active]:bg-transparent data-[state=active]:border-b-[3px] data-[state=active]:border-[#3B82F6] data-[state=active]:shadow-none rounded-sm transition-all"
+                className="flex-none w-auto bg-transparent h-auto px-2 pb-1.5 pt-1 text-[13px] md:text-[14px] font-bold text-[#9CA3AF] hover:text-[#6B7280] data-[state=active]:text-[#3B82F6] data-[state=active]:bg-transparent data-[state=active]:border-b-[3px] data-[state=active]:border-[#3B82F6] data-[state=active]:shadow-none rounded-sm transition-all"
               >
                 People
               </TabsTrigger>
 
               <TabsTrigger 
                 value="dashboard" 
-                className="flex-none w-auto bg-transparent h-auto px-2 pb-1.5 pt-1 text-[14px] font-bold text-[#9CA3AF] hover:text-[#6B7280] data-[state=active]:text-[#3B82F6] data-[state=active]:bg-transparent data-[state=active]:border-b-[3px] data-[state=active]:border-[#3B82F6] data-[state=active]:shadow-none rounded-sm transition-all"
+                className="flex-none w-auto bg-transparent h-auto px-2 pb-1.5 pt-1 text-[13px] md:text-[14px] font-bold text-[#9CA3AF] hover:text-[#6B7280] data-[state=active]:text-[#3B82F6] data-[state=active]:bg-transparent data-[state=active]:border-b-[3px] data-[state=active]:border-[#3B82F6] data-[state=active]:shadow-none rounded-sm transition-all"
               >
                 Dashboard
               </TabsTrigger>
@@ -99,7 +99,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
             </TabsList>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 lg:px-8 py-6">
+          <div className="flex-1 overflow-y-auto px-4 md:px-6 lg:px-8 py-6">
             <TabsContent value="course" className="mt-0 outline-none">
               <CourseTab course={course} />
             </TabsContent>
