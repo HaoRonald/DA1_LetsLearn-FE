@@ -204,7 +204,9 @@ export default function MainLayout({
                   className={`flex items-center gap-4 px-9 py-2.5 transition-colors ${isTodoActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
                 >
                   <ListTodo className="w-5 h-5" />
-                  <span className="text-[14px] font-bold">To-do</span>
+                  <span className="text-[14px] font-bold">
+                    {isAdminOrTeacher ? "To review" : "To-do"}
+                  </span>
                 </Link>
 
                 {/* Active Course - Logic for real courses can be added later */}
