@@ -9,7 +9,6 @@ import {
 import { TopicResponse } from '@/services/courseService';
 import { topicApi, TopicQuizData } from '@/services/topicService';
 import { quizResponseApi, QuizResponseDTO } from '@/services/quizResponseService';
-import { toast } from 'sonner';
 
 interface LearnerQuizViewProps {
   quiz: TopicResponse;
@@ -22,7 +21,6 @@ export function LearnerQuizView({ quiz, courseId }: LearnerQuizViewProps) {
 
   const [myAttempts, setMyAttempts] = useState<QuizResponseDTO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isStarting, setIsStarting] = useState(false);
 
   useEffect(() => {
     const fetchAttempts = async () => {
@@ -68,28 +66,13 @@ export function LearnerQuizView({ quiz, courseId }: LearnerQuizViewProps) {
   const hasAttemptsLeft = attemptLimit === null || myAttempts.length < attemptLimit;
   const isInProgress = myAttempts.some(r => r.data?.status === 'In Progress');
 
-  const handleStartAttempt = async () => {
+  const handleStartAttempt = () => {
     if (!canAttempt || !hasAttemptsLeft) return;
-
-    setIsStarting(true);
-    try {
-      const res = await quizResponseApi.create(quiz.id, {
-        topicId: quiz.id,
-        data: {
-          status: 'In Progress',
-          startedAt: new Date().toISOString(),
-          answers: [],
-        },
-      });
-
-      // Navigate to attempt page
-      router.push(`/quizzes/${quiz.id}/attempt?responseId=${res.data.id}&courseId=${courseId}`);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to start quiz');
-    } finally {
-      setIsStarting(false);
-    }
+    // Navigate directly to the new attempt page — it does a single POST on final submit.
+    // The quiz is identified by its topicId; courseId is passed via URL param.
+    router.push(`/courses/${courseId}/quiz/${quiz.id}/attempting`);
   };
+
 
   if (isLoading) {
     return (
@@ -164,11 +147,10 @@ export function LearnerQuizView({ quiz, courseId }: LearnerQuizViewProps) {
             <div className="flex items-center gap-3">
               <button
                 onClick={handleStartAttempt}
-                disabled={isStarting}
-                className="flex items-center gap-2 bg-[#06B6D4] hover:bg-[#0891b2] transition-colors text-white text-[14px] font-bold px-6 py-2.5 rounded-lg disabled:opacity-50"
+                className="flex items-center gap-2 bg-[#06B6D4] hover:bg-[#0891b2] transition-colors text-white text-[14px] font-bold px-6 py-2.5 rounded-lg"
               >
                 <PlayCircle className="w-5 h-5" />
-                {isStarting ? 'Starting...' : 'Continue Quiz'}
+                Continue Quiz
               </button>
               <span className="text-[#6B7280] text-[13px]">You have an attempt in progress.</span>
             </div>
@@ -176,11 +158,10 @@ export function LearnerQuizView({ quiz, courseId }: LearnerQuizViewProps) {
             <div className="flex items-center gap-3">
               <button
                 onClick={handleStartAttempt}
-                disabled={isStarting}
-                className="flex items-center gap-2 bg-[#06B6D4] hover:bg-[#0891b2] transition-colors text-white text-[14px] font-bold px-6 py-2.5 rounded-lg disabled:opacity-50"
+                className="flex items-center gap-2 bg-[#06B6D4] hover:bg-[#0891b2] transition-colors text-white text-[14px] font-bold px-6 py-2.5 rounded-lg"
               >
                 <PlayCircle className="w-5 h-5" />
-                {isStarting ? 'Starting...' : 'Start Quiz'}
+                Start Quiz
               </button>
               {myAttempts.length > 0 && (
                 <span className="text-[#6B7280] text-[13px]">
