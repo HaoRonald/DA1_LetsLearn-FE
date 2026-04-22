@@ -382,12 +382,16 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPublished, setFilterPublished] = useState<'all' | 'published' | 'draft'>('all');
 
-  // ── Redirect if not authenticated (wait for auth to finish first) ──────────
+  // ── Redirect if not authenticated or if Admin ──────────────────────────────
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push('/login');
+    if (!authLoading) {
+      if (!isAuthenticated) {
+        router.push('/login');
+      } else if (user?.role === 'Admin') {
+        router.push('/admin');
+      }
     }
-  }, [authLoading, isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, user, router]);
 
   // ── Fetch courses based on role ───────────────────────────────────────────
   const fetchCourses = useCallback(async () => {

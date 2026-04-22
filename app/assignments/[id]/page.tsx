@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ChevronRight, FileText, Loader2 } from 'lucide-react';
+import { ChevronRight, FileText, Loader2, ArrowLeft } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -102,11 +102,20 @@ export default function AssignmentDetailPage() {
           
           {/* Purple Top Background */}
           <div className="w-full bg-[#7E22CE] pt-10 pb-20 px-8 md:px-12">
-            <div className="flex items-center gap-4 mb-8 text-white">
-              <div className="bg-white/20 p-2 rounded-lg">
-                <FileText className="w-6 h-6 shrink-0" />
+            <div className="flex flex-col gap-6 mb-8 text-white">
+              <button 
+                onClick={() => router.push(`/courses/${courseId}`)}
+                className="flex items-center gap-2 w-fit px-3 py-1 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm font-medium"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to course
+              </button>
+              <div className="flex items-center gap-4">
+                <div className="bg-white/20 p-2 rounded-lg">
+                  <FileText className="w-6 h-6 shrink-0" />
+                </div>
+                <h1 className="text-[32px] font-bold">{assignment.title}</h1>
               </div>
-              <h1 className="text-[32px] font-bold">{assignment.title}</h1>
             </div>
             
             {/* Tabs List matches the design exactly */}
