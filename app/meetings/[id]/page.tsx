@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { courseApi, TopicResponse } from '@/services/courseService';
 import { topicApi } from '@/services/topicService';
 import MainLayout from '@/components/layout/MainLayout';
-import { Loader2, Video, ChevronRight, Clock, AlignLeft, Send, MoreVertical, Reply, Calendar as CalendarIcon } from 'lucide-react';
+import { Loader2, Video, ChevronRight, Clock, AlignLeft, Send, MoreVertical, Reply, Calendar as CalendarIcon, ArrowLeft } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -120,9 +120,18 @@ export default function MeetingTopicPage() {
       <div className="flex flex-col min-h-screen bg-[#F0F2F5] relative">
         {/* Dark Blue Header */}
         <div className="w-full bg-gradient-to-r from-[#211C64] to-[#1A164D] pt-10 pb-20 px-6 md:px-10">
-          <div className="flex items-center gap-4 mb-8 text-white">
-            <Video className="w-8 h-8 shrink-0" strokeWidth={1.5} />
-            <h1 className="text-[32px] font-medium tracking-wide">{topic.title}</h1>
+          <div className="flex flex-col gap-6 mb-8 text-white">
+            <button 
+              onClick={() => router.push(`/courses/${courseId}`)}
+              className="flex items-center gap-2 w-fit px-3 py-1 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm font-medium"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to course
+            </button>
+            <div className="flex items-center gap-4 text-white">
+              <Video className="w-8 h-8 shrink-0" strokeWidth={1.5} />
+              <h1 className="text-[32px] font-medium tracking-wide">{topic.title}</h1>
+            </div>
           </div>
 
           <Tabs defaultValue="detail" className="w-full">

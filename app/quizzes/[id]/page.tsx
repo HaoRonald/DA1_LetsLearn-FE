@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { ChevronRight, ListChecks, Loader2 } from "lucide-react";
+import { ChevronRight, ListChecks, Loader2, ArrowLeft } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -192,11 +192,20 @@ export default function QuizDetailPage() {
       <div className="flex flex-col min-h-full bg-white relative">
         {/* Deep Pink Top Background */}
         <div className="w-full bg-[#9D174D] pt-10 pb-20 px-6 md:px-10">
-          <div className="flex items-center gap-4 mb-8 text-white">
-            <div className="bg-white/20 p-2 rounded-lg">
-              <ListChecks className="w-6 h-6 shrink-0" />
+          <div className="flex flex-col gap-6 mb-8 text-white">
+            <button 
+              onClick={() => router.push(`/courses/${courseId}`)}
+              className="flex items-center gap-2 w-fit px-3 py-1 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm font-medium"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to course
+            </button>
+            <div className="flex items-center gap-4">
+              <div className="bg-white/20 p-2 rounded-lg">
+                <ListChecks className="w-6 h-6 shrink-0" />
+              </div>
+              <h1 className="text-[32px] font-bold">{quiz.title}</h1>
             </div>
-            <h1 className="text-[32px] font-bold">{quiz.title}</h1>
           </div>
 
           {isTeacher ? (

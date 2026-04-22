@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { courseApi, CourseResponse } from '@/services/courseService';
@@ -13,6 +15,7 @@ import { DashboardTab } from '@/components/courses/DashboardTab';
 
 export default function CourseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const unwrappedParams = React.use(params);
+  const router = useRouter();
   const [course, setCourse] = useState<CourseResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +68,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
         <Tabs defaultValue="course" className="w-full flex-1 flex flex-col">
           
           {/* Header sticky block for the tabs */}
-          <div className="w-full border-b border-[#E5E7EB] bg-white sticky top-0 z-10 pt-2 px-4 md:px-6 lg:px-8 overflow-x-auto scrollbar-hide">
+          <div className="w-full border-b border-[#E5E7EB] bg-white sticky top-0 z-10 pt-2 px-4 md:px-6 lg:px-8 overflow-x-auto scrollbar-hide flex items-center gap-4">
             <TabsList className="bg-transparent h-auto p-0 flex gap-4 md:gap-8 justify-start min-w-max">
               
               <TabsTrigger 

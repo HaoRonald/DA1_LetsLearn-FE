@@ -7,7 +7,7 @@ import { courseApi, TopicResponse } from '@/services/courseService';
 import { topicApi } from '@/services/topicService';
 import { mediaApi } from '@/services/mediaService';
 import MainLayout from '@/components/layout/MainLayout';
-import { Loader2, FileText, ChevronRight, UploadCloud, Paperclip } from 'lucide-react';
+import { Loader2, FileText, ChevronRight, UploadCloud, Paperclip, ArrowLeft } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 
@@ -150,11 +150,20 @@ export default function FileTopicPage() {
       <div className="flex flex-col min-h-screen bg-[#F4F9FD] relative pb-10">
         {/* Blue Header matching design */}
         <div className="w-full bg-gradient-to-r from-[#4A8DEF] to-[#245DAB] pt-8 md:pt-10 pb-16 md:pb-20 px-4 md:px-10">
-          <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8 text-white">
-            <div className="p-2 bg-white/10 rounded-xl shrink-0">
-               <FileText className="w-6 h-6 md:w-8 md:h-8" strokeWidth={1.5} />
+          <div className="flex flex-col gap-6 mb-6 md:mb-8 text-white">
+            <button 
+              onClick={() => router.push(`/courses/${courseId}`)}
+              className="flex items-center gap-2 w-fit px-3 py-1 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm font-medium"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to course
+            </button>
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="p-2 bg-white/10 rounded-xl shrink-0">
+                 <FileText className="w-6 h-6 md:w-8 md:h-8" strokeWidth={1.5} />
+              </div>
+              <h1 className="text-[24px] md:text-[32px] font-bold tracking-tight line-clamp-1">{topic.title}</h1>
             </div>
-            <h1 className="text-[24px] md:text-[32px] font-bold tracking-tight line-clamp-1">{topic.title}</h1>
           </div>
 
           {isTeacher ? (

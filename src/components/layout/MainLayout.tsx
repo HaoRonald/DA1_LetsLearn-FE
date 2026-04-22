@@ -12,9 +12,14 @@ import {
   ListTodo,
   Settings,
   LayoutDashboard,
+  ShieldCheck,
+  Users,
+  BookOpen,
+  BarChart3,
+  ArrowLeft
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function MainLayout({
@@ -28,6 +33,9 @@ export default function MainLayout({
   const [isEnrolledOpen, setIsEnrolledOpen] = useState(true);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const activeTab = searchParams.get("tab") || "dashboard";
 
   // Close user menu when navigation occurs
   useEffect(() => {
@@ -47,7 +55,16 @@ export default function MainLayout({
       {/* --- TOP NAVIGATION BAR --- */}
       <header className="h-16 border-b border-gray-200 flex items-center justify-between px-4 lg:px-6 bg-white shrink-0 z-10 relative">
         <div className="flex items-center gap-4">
-          <button className="p-2 hover:bg-gray-100 rounded-md text-[#6B7280] transition-colors">
+          {!isHomeActive && (
+            <button 
+              onClick={() => router.back()}
+              className="p-2 hover:bg-gray-100 rounded-md text-[#6B7280] transition-colors"
+              title="Go back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
+          <button className="p-2 hover:bg-gray-100 rounded-md text-[#6B7280] transition-colors md:hidden">
             <Menu className="w-5 h-5" />
           </button>
           {headerTitle || (
@@ -153,79 +170,139 @@ export default function MainLayout({
       <div className="flex flex-1 overflow-hidden h-[calc(100vh-64px)]">
         {/* SIDEBAR */}
         <aside className="w-64 border-r border-[#E5E7EB] bg-white flex-shrink-0 hidden md:flex flex-col py-4 overflow-y-auto">
-          {/* Main Links */}
-          <nav className="space-y-1 px-3 mb-6">
-            <Link
-              href="/"
-              className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${isHomeActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
-            >
-              <HomeIcon className="w-5 h-5" />
-              <span className="text-[14px] font-bold">Home</span>
-            </Link>
-            {isAdminOrTeacher && (
-              <Link
-                href="/dashboard"
-                className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${isDashboardActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
-              >
-                <LayoutDashboard className="w-5 h-5" />
-                <span className="text-[14px] font-bold">Dashboard</span>
-              </Link>
-            )}
-            <Link
-              href="/calendar"
-              className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${isCalendarActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
-            >
-              <Calendar className="w-5 h-5" />
-              <span className="text-[14px] font-bold">Calendar</span>
-            </Link>
-          </nav>
-
-          {/* Enrolled Section */}
-          <div className="mb-6">
-            <button
-              onClick={() => setIsEnrolledOpen(!isEnrolledOpen)}
-              className="w-full flex items-center justify-between px-6 py-2 text-[#6B7280] hover:bg-gray-50 transition-colors mb-1"
-            >
-              <div className="flex items-center gap-3">
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform ${!isEnrolledOpen ? "-rotate-90" : ""}`}
-                />
-                <GraduationCap className="w-5 h-5" />
-                <span className="text-[14px] font-bold text-[#374151]">
-                  {isAdminOrTeacher ? "Teaching" : "Enrolled"}
-                </span>
+          {user?.role === "Admin" ? (
+            /* ADMIN SIDEBAR */
+            <div className="flex flex-col h-full">
+              <div className="px-6 mb-8">
+                <div className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-xl border border-red-100">
+                  <ShieldCheck className="w-5 h-5" />
+                  <span className="text-[12px] font-black uppercase tracking-wider">Admin Control</span>
+                </div>
               </div>
-            </button>
 
-            {isEnrolledOpen && (
-              <div className="space-y-1">
+              <nav className="space-y-1 px-3 mb-6">
+                <p className="px-4 text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">Main Menu</p>
                 <Link
-                  href="/todo"
-                  className={`flex items-center gap-4 px-9 py-2.5 transition-colors ${isTodoActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
+                  href="/admin"
+                  className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "dashboard" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`}
                 >
-                  <ListTodo className="w-5 h-5" />
-                  <span className="text-[14px] font-bold">
-                    {isAdminOrTeacher ? "To review" : "To-do"}
-                  </span>
+                  <LayoutDashboard className="w-5 h-5" />
+                  <span className="text-[14px] font-bold">System Overview</span>
                 </Link>
+                <Link
+                  href="/admin?tab=users"
+                  className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "users" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`}
+                >
+                  <Users className="w-5 h-5" />
+                  <span className="text-[14px] font-bold">User Management</span>
+                </Link>
+                <Link
+                  href="/admin?tab=courses"
+                  className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "courses" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`}
+                >
+                  <BookOpen className="w-5 h-5" />
+                  <span className="text-[14px] font-bold">Course Control</span>
+                </Link>
+              </nav>
 
-                {/* Active Course - Logic for real courses can be added later */}
-                {/* For now keep one sample item or remove if none */}
+              <nav className="space-y-1 px-3 mb-6">
+                <p className="px-4 text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">Analysis</p>
+                <Link
+                  href="/admin?tab=statistics"
+                  className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "statistics" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`}
+                >
+                  <BarChart3 className="w-5 h-5" />
+                  <span className="text-[14px] font-bold">Statistics</span>
+                </Link>
+              </nav>
+
+              <div className="mt-auto px-3">
+                <div className="border-t border-[#E5E7EB] pt-4">
+                  <Link
+                    href="/settings"
+                    className="flex items-center gap-4 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                  >
+                    <Settings className="w-5 h-5" />
+                    <span className="text-[14px] font-bold">System Settings</span>
+                  </Link>
+                </div>
               </div>
-            )}
-          </div>
-
-          <div className="mt-auto px-3">
-            <div className="border-t border-[#E5E7EB] pt-4">
-              <a
-                href="#"
-                className="flex items-center gap-4 px-3 py-2.5 rounded-lg text-[#6B7280] hover:bg-gray-50 transition-colors"
-              >
-                <Settings className="w-5 h-5" />
-                <span className="text-[14px] font-bold">Settings</span>
-              </a>
             </div>
-          </div>
+          ) : (
+            /* TEACHER/LEARNER SIDEBAR */
+            <>
+              {/* Main Links */}
+              <nav className="space-y-1 px-3 mb-6">
+                <Link
+                  href="/"
+                  className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${isHomeActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
+                >
+                  <HomeIcon className="w-5 h-5" />
+                  <span className="text-[14px] font-bold">Home</span>
+                </Link>
+                {isAdminOrTeacher && (
+                  <Link
+                    href="/dashboard"
+                    className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${isDashboardActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
+                  >
+                    <LayoutDashboard className="w-5 h-5" />
+                    <span className="text-[14px] font-bold">Dashboard</span>
+                  </Link>
+                )}
+                <Link
+                  href="/calendar"
+                  className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${isCalendarActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
+                >
+                  <Calendar className="w-5 h-5" />
+                  <span className="text-[14px] font-bold">Calendar</span>
+                </Link>
+              </nav>
+
+              {/* Enrolled Section */}
+              <div className="mb-6">
+                <button
+                  onClick={() => setIsEnrolledOpen(!isEnrolledOpen)}
+                  className="w-full flex items-center justify-between px-6 py-2 text-[#6B7280] hover:bg-gray-50 transition-colors mb-1"
+                >
+                  <div className="flex items-center gap-3">
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform ${!isEnrolledOpen ? "-rotate-90" : ""}`}
+                    />
+                    <GraduationCap className="w-5 h-5" />
+                    <span className="text-[14px] font-bold text-[#374151]">
+                      {isAdminOrTeacher ? "Teaching" : "Enrolled"}
+                    </span>
+                  </div>
+                </button>
+
+                {isEnrolledOpen && (
+                  <div className="space-y-1">
+                    <Link
+                      href="/todo"
+                      className={`flex items-center gap-4 px-9 py-2.5 transition-colors ${isTodoActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
+                    >
+                      <ListTodo className="w-5 h-5" />
+                      <span className="text-[14px] font-bold">
+                        {isAdminOrTeacher ? "To review" : "To-do"}
+                      </span>
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-auto px-3">
+                <div className="border-t border-[#E5E7EB] pt-4">
+                  <Link
+                    href="/settings"
+                    className="flex items-center gap-4 px-3 py-2.5 rounded-lg text-[#6B7280] hover:bg-gray-50 transition-colors"
+                  >
+                    <Settings className="w-5 h-5" />
+                    <span className="text-[14px] font-bold">Settings</span>
+                  </Link>
+                </div>
+              </div>
+            </>
+          )}
         </aside>
 
         {/* CONTENT AREA */}
