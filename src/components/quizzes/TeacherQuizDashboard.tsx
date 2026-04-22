@@ -59,65 +59,13 @@ export function TeacherQuizDashboard({ quiz, courseId }: TeacherQuizDashboardPro
 
   useEffect(() => {
     const fetchReport = async () => {
-      // Define dummy data once to reuse it
-      const dummyData: QuizReport = {
-        name: quiz.title,
-        questionCount: 15,
-        attemptCount: 8,
-        avgStudentMarkBase10: 7.2,
-        maxStudentMarkBase10: 9.6,
-        avgTimeSpend: 620,
-        completionRate: 0.72,
-        students: [
-          { id: 's1', username: 'Lê Văn Tám', email: 'tam.le@student.com' },
-          { id: 's2', username: 'Trần Thị Hoa', email: 'hoa.tran@student.com' },
-          { id: 's3', username: 'Nguyễn Minh Anh', email: 'anh.nguyen@student.com' },
-          { id: 's4', username: 'Phạm Hồng Phúc', email: 'phuc.pham@student.com' },
-          { id: 's5', username: 'Bùi Anh Tuấn', email: 'tuan.bui@student.com' },
-          { id: 's6', username: 'Vũ Thảo Linh', email: 'linh.vu@student.com' },
-          { id: 's7', username: 'Đặng Ngọc Mai', email: 'mai.dang@student.com' },
-          { id: 's8', username: 'Hoàng Minh', email: 'minh.hoang@student.com' },
-          { id: 's9', username: 'Đặng Quốc Bảo', email: 'bao.dang@student.com' },
-          { id: 's10', username: 'Hoàng Minh Quân', email: 'quan.ho@student.com' },
-        ],
-        trueFalseQuestionCount: 5,
-        multipleChoiceQuestionCount: 8,
-        shortAnswerQuestionCount: 2,
-        studentWithMarkOver8: [
-          { student: { id: 's1', username: 'Lê Văn Tám' }, mark: 9.5 },
-          { student: { id: 's5', username: 'Bùi Anh Tuấn' }, mark: 9.0 },
-          { student: { id: 's7', username: 'Đặng Ngọc Mai' }, mark: 8.8 }
-        ],
-        studentWithMarkOver5: [
-          { student: { id: 's2', username: 'Trần Thị Hoa' }, mark: 8.2 },
-          { student: { id: 's4', username: 'Phạm Hồng Phúc' }, mark: 7.0 },
-          { student: { id: 's6', username: 'Vũ Thảo Linh' }, mark: 5.5 }
-        ],
-        studentWithMarkOver2: [
-          { student: { id: 's3', username: 'Nguyễn Minh Anh' }, mark: 4.5 },
-          { student: { id: 's8', username: 'Hoàng Minh' }, mark: 2.5 }
-        ],
-        studentWithMarkOver0: [],
-        studentWithNoResponse: [
-          { student: { id: 's9', username: 'Đặng Quốc Bảo' } },
-          { student: { id: 's10', username: 'Hoàng Minh Quân' } },
-          { student: { id: 's11', username: 'Nguyễn Thị Tuyết' } }
-        ],
-        maxDefaultMark: 10
-      };
-
       try {
         setIsLoading(true);
         const res = await topicApi.getQuizReport(courseId, quiz.id);
-        let data = res.data;
-
-        if (!data || data.attemptCount === 0) {
-          data = dummyData;
-        }
-        setReport(data);
+        setReport(res.data);
       } catch (err) {
-        console.error('Failed to fetch quiz report, using dummy data:', err);
-        setReport(dummyData); // Use dummy data even on error
+        console.error('Failed to fetch quiz report:', err);
+        setError('Failed to load quiz report data.');
       } finally {
         setIsLoading(false);
       }

@@ -7,9 +7,10 @@ import { UploadCloud, Paperclip } from 'lucide-react';
 interface TeacherAssignmentSettingsProps {
   assignment: TopicResponse;
   courseId: string;
+  onUpdate?: () => void;
 }
 
-export function TeacherAssignmentSettings({ assignment, courseId }: TeacherAssignmentSettingsProps) {
+export function TeacherAssignmentSettings({ assignment, courseId, onUpdate }: TeacherAssignmentSettingsProps) {
   const assignmentData = assignment.data || {};
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -27,7 +28,7 @@ export function TeacherAssignmentSettings({ assignment, courseId }: TeacherAssig
     enableOpen: !!assignmentData.open,
     enableClose: !!assignmentData.close,
     enableRemind: !!assignmentData.remindToGrade,
-    enableMaxFiles: assignmentData.maximumFile > 0,
+    enableMaxFiles: (assignmentData.maximumFile || 0) > 0,
     enableMaxSize: !!assignmentData.maximumFileSize,
   });
 
@@ -62,6 +63,7 @@ export function TeacherAssignmentSettings({ assignment, courseId }: TeacherAssig
 
       await topicApi.update(courseId, assignment.id, payload);
       toast.success("Settings saved successfully!");
+      if (onUpdate) onUpdate();
     } catch (error: any) {
       console.error("Save error:", error);
       toast.error(error.response?.data?.message || "Failed to save settings");

@@ -1,17 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { 
-  CornerDownLeft, MoreVertical, Send, UploadCloud, Paperclip, Loader2, CheckCircle2 
+  CornerDownLeft, MoreVertical, Send, UploadCloud, Paperclip, Loader2, CheckCircle2, XCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { commentApi, GetCommentResponse } from '@/services/commentService';
+import { useAuth } from '@/contexts/AuthContext';
 
 import { TopicResponse } from '@/services/courseService';
 import { assignmentResponseApi, AssignmentResponseDTO } from '@/services/assignmentResponseService';
 
 interface LearnerAssignmentViewProps {
   assignment: TopicResponse;
+  courseId: string;
 }
 
-export function LearnerAssignmentView({ assignment }: LearnerAssignmentViewProps) {
+export function LearnerAssignmentView({ assignment, courseId }: LearnerAssignmentViewProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [myResponse, setMyResponse] = useState<AssignmentResponseDTO | null>(null);
@@ -21,6 +24,13 @@ export function LearnerAssignmentView({ assignment }: LearnerAssignmentViewProps
   const [note, setNote] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const { user } = useAuth();
+  
+  // Comments state
+  const [comments, setComments] = useState<GetCommentResponse[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [isAddingComment, setIsAddingComment] = useState(false);
+  const [isFetchingComments, setIsFetchingComments] = useState(true);
 
   const assignmentData = assignment.data || {};
 
@@ -40,7 +50,51 @@ export function LearnerAssignmentView({ assignment }: LearnerAssignmentViewProps
     };
 
     fetchMySubmission();
-  }, [assignment.id]);
+    fetchComments();
+  }, [assignment.id, courseId]);
+
+  const fetchComments = async () => {
+    try {
+      const response = await commentApi.getByTopic(courseId, assignment.id);
+      setComments(response.data);
+    } catch (error) {
+      console.error("Failed to fetch comments:", error);
+    } finally {
+      setIsFetchingComments(false);
+    }
+  };
+
+  const handleAddComment = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!newComment.trim()) return;
+
+    setIsAddingComment(true);
+    try {
+      await commentApi.add(courseId, assignment.id, {
+        topicId: assignment.id,
+        text: newComment
+      });
+      setNewComment("");
+      await fetchComments();
+      toast.success("Comment added");
+    } catch (error) {
+      console.error("Failed to add comment:", error);
+      toast.error("Failed to post comment");
+    } finally {
+      setIsAddingComment(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      await commentApi.delete(courseId, assignment.id, commentId);
+      setComments(prev => prev.filter(c => c.id !== commentId));
+      toast.success("Comment deleted");
+    } catch (error) {
+      console.error("Failed to delete comment:", error);
+      toast.error("Failed to delete comment");
+    }
+  };
 
   const handleFileClick = () => {
     fileInputRef.current?.click();
@@ -266,54 +320,75 @@ export function LearnerAssignmentView({ assignment }: LearnerAssignmentViewProps
               <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
-            Class comments
+            Class comments ({comments.length})
           </div>
         </div>
 
         <div className="space-y-6">
-          {/* Comment 1 */}
-          <div className="flex gap-4 group">
-            <img 
-              src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80" 
-              alt="Emilia" 
-              className="w-10 h-10 rounded-full object-cover shrink-0 border border-gray-200"
-            />
-            <div className="flex-1">
-              <div className="flex items-end gap-2 mb-1">
-                <span className="font-bold text-[#06B6D4] text-[14px]">Emilia</span>
-                <span className="text-[12px] text-[#9CA3AF] font-medium leading-[14px] pb-[1px]">8:11 AM</span>
+          {isFetchingComments ? (
+            <div className="flex justify-center py-4">
+              <Loader2 className="w-5 h-5 animate-spin text-gray-300" />
+            </div>
+          ) : comments.length > 0 ? (
+            comments.map((cmt) => (
+              <div key={cmt.id} className="flex gap-4 group">
+                <img 
+                  src={cmt.user.avatar || `https://ui-avatars.com/api/?name=${cmt.user.username}&background=random`} 
+                  alt={cmt.user.username} 
+                  className="w-10 h-10 rounded-full object-cover shrink-0 border border-gray-100"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-bold text-[#06B6D4] text-[14px]">{cmt.user.username}</span>
+                    <span className="text-[12px] text-[#9CA3AF] font-medium">
+                      {new Date(cmt.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  <p className="text-[14px] text-[#374151] whitespace-pre-wrap">{cmt.text}</p>
+                </div>
+                {(user?.id === cmt.user.id || user?.role === 'Teacher' || user?.role === 'Admin') && (
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={() => handleDeleteComment(cmt.id)}
+                      className="p-1 hover:bg-red-50 rounded-full text-[#9CA3AF] hover:text-red-500 transition-colors"
+                      title="Delete comment"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
-              <p className="text-[14px] text-[#374151]">Hello teacher! My submission was lost, can you help me ?</p>
-            </div>
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button className="p-1 hover:bg-gray-100 rounded-full text-[#6B7280]">
-                <CornerDownLeft className="w-5 h-5" />
-              </button>
-              <button className="p-1 hover:bg-gray-100 rounded-full text-[#6B7280]">
-                <MoreVertical className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+            ))
+          ) : (
+            <p className="text-center text-gray-400 text-[14px] py-4 italic">No comments yet. Be the first to say something!</p>
+          )}
         </div>
 
         {/* Comment Input */}
-        <div className="flex gap-3 mt-8 items-center">
+        <form onSubmit={handleAddComment} className="flex gap-3 mt-8 items-center">
           <img 
-            src="https://ui-avatars.com/api/?name=St&background=random" 
+            src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.username || 'U'}&background=random`} 
             alt="Your Avatar" 
             className="w-8 h-8 rounded-full object-cover shrink-0 border border-gray-200"
           />
           <div className="flex-1 relative flex items-center">
             <input 
               type="text" 
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              disabled={isAddingComment}
               placeholder="Add class comment" 
-              className="w-full border border-[#E5E7EB] rounded-full px-5 py-2.5 text-[14px] font-medium text-[#374151] placeholder-[#9CA3AF] focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] transition-all bg-[#F9FAFB] focus:bg-white"
+              className="w-full border border-[#E5E7EB] rounded-full px-5 py-2.5 text-[14px] font-medium text-[#374151] placeholder-[#9CA3AF] focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] transition-all bg-[#F9FAFB] focus:bg-white disabled:opacity-50"
             />
-            <button className="absolute right-3 text-[#6B7280] hover:text-[#3B82F6] transition-colors p-1">
-              <Send className="w-5 h-5" />
+            <button 
+              type="submit"
+              disabled={isAddingComment || !newComment.trim()}
+              className="absolute right-3 text-[#6B7280] hover:text-[#3B82F6] transition-colors p-1 disabled:opacity-30"
+            >
+              {isAddingComment ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

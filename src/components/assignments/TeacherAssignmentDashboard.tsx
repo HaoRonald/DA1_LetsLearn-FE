@@ -1,44 +1,76 @@
 import { TopicResponse } from "@/services/courseService";
-import { Filter, Activity, Users } from "lucide-react";
+import { Filter, Activity, Loader2 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { useEffect, useState } from 'react';
+import { topicApi, SingleAssignmentReportDTO } from '@/services/topicService';
 
 interface TeacherAssignmentDashboardProps {
   assignment: TopicResponse;
+  courseId: string;
 }
 
 export function TeacherAssignmentDashboard({
   assignment,
+  courseId,
 }: TeacherAssignmentDashboardProps) {
-  // Use real data from topic, but fall back to rich dummy data for better visualization
+  const [report, setReport] = useState<SingleAssignmentReportDTO | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchReport = async () => {
+      try {
+        const response = await topicApi.getAssignmentReport(courseId, assignment.id);
+        setReport(response.data);
+      } catch (error) {
+        console.error("Failed to fetch assignment report:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReport();
+  }, [courseId, assignment.id]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] bg-white rounded-xl border border-gray-100 shadow-sm">
+        <Loader2 className="w-10 h-10 animate-spin text-purple-600 mb-4" />
+        <p className="text-gray-500 font-medium">Analyzing assignment data...</p>
+      </div>
+    );
+  }
+
+  if (!report) return null;
+
   const assignmentData = {
-    assignedCount: 25,
-    submittedCount: 18,
-    gradedCount: 12,
-    totalFiles: 32,
-    avgMark: 8.4,
-    topMark: 10,
-    ...(assignment.data || {})
+    assignedCount: report.studentMarks?.length || 0,
+    submittedCount: report.studentMarks?.filter(s => s.submitted).length || 0,
+    gradedCount: report.studentMarks?.filter(s => s.submitted && s.mark != null && s.mark > 0).length || 0,
+    totalFiles: report.fileCount || 0,
+    avgMark: report.avgMark || 0,
+    topMark: report.maxMark || 0,
+    completionRate: Math.round((report.completionRate || 0) * 100)
   };
 
-  const completionRate =
-    assignmentData.assignedCount > 0
-      ? Math.round(
-          (assignmentData.submittedCount / assignmentData.assignedCount) * 100,
-        )
-      : 0;
+  // Map file types from API
+  const fileTypeData = Object.entries(report.fileTypeCount || {}).map(([name, value], idx) => {
+    const colors = ['#EF4444', '#3B82F6', '#F97316', '#A855F7', '#10B981'];
+    return {
+      name: name.toUpperCase(),
+      value: value as number,
+      color: colors[idx % colors.length]
+    };
+  });
 
-  // Mock data for charts
-  const fileTypeData = [
-    { name: 'PDF', value: 12, color: '#EF4444' },
-    { name: 'DOCX', value: 8, color: '#3B82F6' },
-    { name: 'ZIP', value: 12, color: '#F97316' },
-  ];
+  // If no files, add a placeholder
+  if (fileTypeData.length === 0) {
+    fileTypeData.push({ name: 'None', value: 0, color: '#E5E7EB' });
+  }
 
   const gradeDistributionData = [
-    { name: 'S (80-100%)', value: 5, color: '#22C55E', badge: 'S', range: '80 - 100%' },
-    { name: 'A (50-79%)', value: 13, color: '#3B82F6', badge: 'A', range: '50 - 79%' },
-    { name: 'B (20-49%)', value: 4, color: '#F97316', badge: 'B', range: '20 - 49%' },
-    { name: 'C (0-19%)', value: 3, color: '#EF4444', badge: 'C', range: '0 - 19%' },
+    { name: 'S (8.0 - 10)', value: report.studentWithMarkOver8?.length || 0, color: '#22C55E', badge: 'S', range: '8.0 - 10' },
+    { name: 'A (5.0 - 7.9)', value: report.studentWithMarkOver5?.length || 0, color: '#3B82F6', badge: 'A', range: '5.0 - 7.9' },
+    { name: 'B (2.0 - 4.9)', value: report.studentWithMarkOver2?.length || 0, color: '#F97316', badge: 'B', range: '2.0 - 4.9' },
+    { name: 'C (0.0 - 1.9)', value: report.studentWithMarkOver0?.length || 0, color: '#EF4444', badge: 'C', range: '0.0 - 1.9' },
   ];
 
   return (
@@ -80,7 +112,7 @@ export function TeacherAssignmentDashboard({
           { label: 'Files', value: assignmentData.totalFiles, color: 'text-orange-500' },
           { label: 'Avg Mark', value: (assignmentData.avgMark || 0).toFixed(1), color: 'text-green-600' },
           { label: 'Top Mark', value: (assignmentData.topMark || 0).toFixed(1), color: 'text-pink-600' },
-          { label: 'Completion', value: `${completionRate}%`, color: 'text-indigo-600' }
+          { label: 'Completion', value: `${assignmentData.completionRate}%`, color: 'text-indigo-600' }
         ].map((kpi, idx) => (
           <div key={idx} className="flex flex-col items-center bg-gray-50/50 p-4 rounded-3xl md:bg-transparent md:p-0">
             <p className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 md:mb-3">

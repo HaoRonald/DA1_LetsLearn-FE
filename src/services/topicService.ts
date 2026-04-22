@@ -41,6 +41,33 @@ export interface QuizReportStudentMark {
   responseId?: string;
 }
 
+export interface AssignmentReportStudent {
+  student: QuizReportStudentInfo;
+  submitted: boolean;
+  mark?: number;
+  responseId?: string;
+}
+
+export interface SingleAssignmentReportDTO {
+  name: string;
+  studentMarks: AssignmentReportStudent[];
+  studentWithMarkOver8: AssignmentReportStudent[];
+  studentWithMarkOver5: AssignmentReportStudent[];
+  studentWithMarkOver2: AssignmentReportStudent[];
+  studentWithMarkOver0: AssignmentReportStudent[];
+  studentWithNoResponse: AssignmentReportStudent[];
+  markDistributionCount: Record<number, number>;
+  submissionCount: number;
+  gradedSubmissionCount: number;
+  fileCount: number;
+  avgMark: number;
+  maxMark: number;
+  minMark: number;
+  completionRate: number;
+  students: QuizReportStudentInfo[];
+  fileTypeCount: Record<string, number>;
+}
+
 export interface SingleQuizReportDTO {
   name: string;
   studentWithMark: QuizReportStudentMark[];
@@ -79,7 +106,7 @@ export const topicApi = {
     axiosInstance.delete(`/course/${courseId}/topic/${topicId}`),
 
   getAssignmentReport: (courseId: string, topicId: string) =>
-    axiosInstance.get<any>(`/course/${courseId}/topic/${topicId}/assignment-report`),
+    axiosInstance.get<SingleAssignmentReportDTO>(`/course/${courseId}/topic/${topicId}/assignment-report`),
 
   getQuizReport: (courseId: string, topicId: string) =>
     axiosInstance.get<SingleQuizReportDTO>(`/course/${courseId}/topic/${topicId}/quiz-report`),

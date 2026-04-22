@@ -60,46 +60,14 @@ export function TeacherQuizSubmissions({ quiz, courseId }: TeacherQuizSubmission
 
   useEffect(() => {
     const fetchReport = async () => {
-      const dummyData: QuizReport = {
-        name: quiz.title,
-        studentWithMark: [
-          { student: { id: 's1', username: 'Lê Văn Tám', email: 'tam.le@student.com' }, submitted: true, mark: 9.5, responseId: 'r1' },
-          { student: { id: 's2', username: 'Trần Thị Hoa', email: 'hoa.tran@student.com' }, submitted: true, mark: 8.2, responseId: 'r2' },
-          { student: { id: 's3', username: 'Nguyễn Minh Anh', email: 'anh.nguyen@student.com' }, submitted: true, mark: 4.5, responseId: 'r3' },
-          { student: { id: 's4', username: 'Phạm Hồng Phúc', email: 'phuc.pham@student.com' }, submitted: true, mark: 7.0, responseId: 'r4' },
-          { student: { id: 's5', username: 'Bùi Anh Tuấn', email: 'tuan.bui@student.com' }, submitted: true, mark: 9.0, responseId: 'r5' },
-          { student: { id: 's6', username: 'Vũ Thảo Linh', email: 'linh.vu@student.com' }, submitted: true, mark: 5.5, responseId: 'r6' },
-          { student: { id: 's7', username: 'Đặng Ngọc Mai', email: 'mai.dang@student.com' }, submitted: true, mark: 8.8, responseId: 'r7' },
-          { student: { id: 's8', username: 'Hoàng Minh', email: 'minh.hoang@student.com' }, submitted: true, mark: 2.5, responseId: 'r8' }
-        ],
-        studentWithNoResponse: [
-          { student: { id: 's9', username: 'Đặng Quốc Bảo', email: 'bao.dang@student.com' }, submitted: false },
-          { student: { id: 's10', username: 'Hoàng Minh Quân', email: 'quan.ho@student.com' }, submitted: false },
-          { student: { id: 's11', username: 'Nguyễn Thị Tuyết', email: 'tuyet.ng@student.com' }, submitted: false }
-        ],
-        maxDefaultMark: 10,
-        questionCount: 15,
-        avgStudentMarkBase10: 7.2,
-        maxStudentMarkBase10: 9.5,
-        attemptCount: 8,
-        avgTimeSpend: 620,
-        completionRate: 0.72,
-        students: []
-      };
-
       try {
         setIsLoading(true);
         setError(null);
         const res = await topicApi.getQuizReport(courseId, quiz.id);
-        
-        let data = res.data;
-        if (!data || (data.studentWithMark.length === 0 && data.studentWithNoResponse.length === 0)) {
-          data = dummyData;
-        }
-        setReport(data);
+        setReport(res.data);
       } catch (err: any) {
-        console.error('Failed to fetch quiz report, using dummy data:', err);
-        setReport(dummyData);
+        console.error('Failed to fetch quiz report:', err);
+        setError('Failed to load quiz results. Please try again later.');
       } finally {
         setIsLoading(false);
       }
