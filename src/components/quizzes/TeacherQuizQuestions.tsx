@@ -4,7 +4,9 @@ import React from 'react';
 import {
   ListChecks, Type, FileText, LayoutGrid, Trash2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import type { QuizTopic, QuizQuestion } from '@/types/quiz';
+import { updateQuizTopicQuestions } from '@/services/questionBankService';
 
 // ── Props ──────────────────────────────────────────────────────────────────────
 
@@ -27,9 +29,34 @@ function getIcon(type?: string) {
 
 // ══════════════════════════════════════════════════════════════════════════════
 
-export function TeacherQuizQuestions({ quiz }: Props) {
+export function TeacherQuizQuestions({ quiz, courseId, onQuizUpdated }: Props) {
   const questions: QuizQuestion[] = quiz.data?.questions ?? [];
   const totalMark = questions.reduce((sum, q) => sum + (q.defaultMark ?? 1), 0);
+
+  const handleRemove = async (index: number) => {
+    try {
+      const updatedQuestions = [...questions];
+      updatedQuestions.splice(index, 1);
+      
+      const updatedData = { ...quiz.data, questions: updatedQuestions };
+      
+      // Call API to update the topic
+      const updatedQuiz = await updateQuizTopicQuestions({
+        courseId,
+        topicId: quiz.id,
+        topicTitle: quiz.title,
+        sectionId: quiz.sectionId,
+        quizData: updatedData,
+      });
+
+      // Update parent state with the data from backend
+      onQuizUpdated(updatedQuiz);
+
+      toast.success("Question removed from quiz");
+    } catch {
+      toast.error("Failed to remove question");
+    }
+  };
 
   // ════════════════════════════════════════════════════════════════════════════
 
@@ -98,11 +125,10 @@ export function TeacherQuizQuestions({ quiz }: Props) {
                         </span>
                       </td>
                       <td className="p-4">
-                        {/* Delete API not yet available — UI only */}
                         <button
-                          disabled
-                          className="text-gray-300 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 cursor-not-allowed"
-                          title="Delete (coming soon)"
+                          onClick={() => handleRemove(idx)}
+                          className="text-gray-300 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                          title="Remove from quiz"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

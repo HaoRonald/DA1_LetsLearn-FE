@@ -133,19 +133,23 @@ export function bankQuestionToQuizQuestion(q: Question, topicId: string): QuizQu
  * Previously this called axiosInstance directly which caused a 500
  * due to the data field being double-stringified or not stringified at all.
  */
-export function updateQuizTopicQuestions(input: UpdateQuizTopicInput): Promise<void> {
+export function updateQuizTopicQuestions(input: UpdateQuizTopicInput): Promise<QuizTopic> {
   const updatePayload = {
     id: input.topicId,
     title: input.topicTitle,
     type: 'quiz',
     sectionId: input.sectionId,
-    // Pass as plain object — topicApi.update will JSON.stringify it
     data: input.quizData as unknown,
   };
 
-  console.log('[updateQuizTopicQuestions] sending →', updatePayload);
-
   return topicApi
     .update(input.courseId, input.topicId, updatePayload)
-    .then(() => undefined);
+    .then((r) => ({
+      id: r.data.id,
+      title: r.data.title,
+      type: 'quiz',
+      sectionId: r.data.sectionId,
+      // Need to parse the data field since topicApi.update returns it as raw object/string
+      data: (typeof r.data.data === 'string' ? JSON.parse(r.data.data) : r.data.data) as QuizTopicData
+    }));
 }

@@ -298,7 +298,7 @@ export function TeacherQuizQuestionBank({
       const updatedQuestions = [...(quiz.data?.questions ?? []), quizQuestion];
       const updatedData = { ...quiz.data, questions: updatedQuestions };
 
-      await updateQuizTopicQuestions({
+      const updatedQuiz = await updateQuizTopicQuestions({
         courseId,
         topicId: quiz.id,
         topicTitle: quiz.title,
@@ -306,11 +306,7 @@ export function TeacherQuizQuestionBank({
         quizData: updatedData,
       });
 
-      // Notify parent to refresh quiz state
-      const updatedQuiz: QuizTopic = {
-        ...quiz,
-        data: updatedData,
-      };
+      // Notify parent to refresh quiz state with response from backend
       onQuizUpdated(updatedQuiz);
       toast.success(`"${bankQuestion.questionName}" added to quiz ✓`);
     } catch {

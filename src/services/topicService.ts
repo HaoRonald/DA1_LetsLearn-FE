@@ -22,6 +22,13 @@ export interface UpdateTopicRequest {
   data?: any;
 }
 
+export interface SaveMeetingHistoryRequest {
+  startTime: string;
+  endTime: string | null;
+  attendeeCount: number;
+  attendanceCsvUrl?: string;
+}
+
 // Re-export quiz-specific types for convenience
 export type { TopicQuizData, TopicQuizQuestion, QuestionChoice } from './questionService';
 
@@ -110,5 +117,18 @@ export const topicApi = {
 
   getQuizReport: (courseId: string, topicId: string) =>
     axiosInstance.get<SingleQuizReportDTO>(`/course/${courseId}/topic/${topicId}/quiz-report`),
+
+  saveMeetingHistory: (courseId: string, topicId: string, data: SaveMeetingHistoryRequest) =>
+    axiosInstance.post(`/course/${courseId}/topic/${topicId}/meeting-history`, data),
+
+  getMeetingToken: (courseId: string, topicId: string) =>
+    axiosInstance.get<{
+      token: string;
+      roomName: string;
+      wsUrl: string;
+      role: string;
+      avatarUrl: string;
+      name: string;
+    }>(`/Course/${courseId}/meeting/${topicId}/token`),
 };
 
