@@ -14,50 +14,60 @@ export default function PageTopicPage() {
   const { id: topicId } = useParams() as { id: string };
   const searchParams = useSearchParams();
   const courseId = searchParams.get('courseId');
+  const initialTab = searchParams.get('tab') || 'page';
   const router = useRouter();
   const { user } = useAuth();
   
   const [topic, setTopic] = useState<TopicResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   // Form states for Settings tab
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [content, setContent] = useState('');
 
-  useEffect(() => {
+  const fetchTopic = async () => {
     if (!courseId || !topicId) {
       setIsLoading(false);
       return;
     }
-    const fetchTopic = async () => {
-      try {
-        const res = await courseApi.getTopicById(courseId, topicId);
-        setTopic(res.data);
-        setName(res.data.title || '');
-        const dataStr = res.data.data;
-        if (typeof dataStr === 'string') {
-          try {
-            const parsed = JSON.parse(dataStr);
-            setDescription(parsed.description || '');
-            setContent(parsed.content || '');
-          } catch {
-            // fallback if it's just raw HTML string
-            setContent(dataStr);
-          }
-        } else if (typeof dataStr === 'object') {
-            setDescription(dataStr?.description || '');
-            setContent(dataStr?.content || '');
+    try {
+      const res = await courseApi.getTopicById(courseId, topicId);
+      setTopic(res.data);
+      setName(res.data.title || '');
+      const dataStr = res.data.data;
+      if (typeof dataStr === 'string') {
+        try {
+          const parsed = JSON.parse(dataStr);
+          setDescription(parsed.description || '');
+          setContent(parsed.content || '');
+        } catch {
+          // fallback if it's just raw HTML string
+          setContent(dataStr);
         }
-      } catch (err) {
-        console.error('Failed to fetch page topic:', err);
-      } finally {
-        setIsLoading(false);
+      } else if (typeof dataStr === 'object') {
+          setDescription(dataStr?.description || '');
+          setContent(dataStr?.content || '');
       }
-    };
+    } catch (err) {
+      console.error('Failed to fetch page topic:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchTopic();
   }, [courseId, topicId]);
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const handleSave = async () => {
     if (!courseId || !topic) return;
@@ -74,7 +84,8 @@ export default function PageTopicPage() {
         data: updatedData
       });
       setTopic(prev => prev ? { ...prev, title: name, data: updatedData } : null);
-      toast.success('Settings saved successfully');
+      toast.success('Topic updated successfully!');
+      setActiveTab('page');
     } catch (err) {
       toast.error('Failed to save settings');
     } finally {
@@ -130,7 +141,7 @@ export default function PageTopicPage() {
           </div>
 
           {isTeacher ? (
-            <Tabs defaultValue="page" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="border-b-[1.5px] border-white/20 w-full overflow-x-auto scrollbar-hide">
                 <TabsList className="bg-transparent p-0 flex justify-start gap-6 md:gap-8 min-w-max h-auto">
                   <TabsTrigger

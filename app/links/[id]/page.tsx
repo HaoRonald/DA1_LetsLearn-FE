@@ -14,56 +14,66 @@ export default function LinkTopicPage() {
   const { id: topicId } = useParams() as { id: string };
   const searchParams = useSearchParams();
   const courseId = searchParams.get('courseId');
+  const initialTab = searchParams.get('tab') || 'link';
   const router = useRouter();
   const { user } = useAuth();
   
   const [topic, setTopic] = useState<TopicResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   // Form states for Settings tab
   const [name, setName] = useState('');
   const [externalUrl, setExternalUrl] = useState('');
   const [description, setDescription] = useState('');
 
-  useEffect(() => {
+  const fetchTopic = async () => {
     if (!courseId || !topicId) {
       setIsLoading(false);
       return;
     }
-    const fetchTopic = async () => {
-      try {
-        const res = await courseApi.getTopicById(courseId, topicId);
-        setTopic(res.data);
-        setName(res.data.title || '');
-        const dataStr = res.data.data;
-        if (typeof dataStr === 'string') {
-          try {
-            const parsed = JSON.parse(dataStr);
-            setExternalUrl(parsed.externalUrl || '');
-            setDescription(parsed.description || '');
-          } catch {
-            setExternalUrl(dataStr);
-          }
-        } else if (typeof dataStr === 'object') {
-            setExternalUrl(dataStr?.externalUrl || '');
-            setDescription(dataStr?.description || '');
+    try {
+      const res = await courseApi.getTopicById(courseId, topicId);
+      setTopic(res.data);
+      setName(res.data.title || '');
+      const dataStr = res.data.data;
+      if (typeof dataStr === 'string') {
+        try {
+          const parsed = JSON.parse(dataStr);
+          setExternalUrl(parsed.url || parsed.externalUrl || '');
+          setDescription(parsed.description || '');
+        } catch {
+          setExternalUrl(dataStr);
         }
-      } catch (err) {
-        console.error('Failed to fetch link topic:', err);
-      } finally {
-        setIsLoading(false);
+      } else if (typeof dataStr === 'object') {
+          setExternalUrl(dataStr?.url || dataStr?.externalUrl || '');
+          setDescription(dataStr?.description || '');
       }
-    };
+    } catch (err) {
+      console.error('Failed to fetch link topic:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchTopic();
   }, [courseId, topicId]);
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const handleSave = async () => {
     if (!courseId || !topic) return;
     setIsSaving(true);
     try {
       const updatedData = {
-        externalUrl,
+        url: externalUrl,
         description
       };
       await topicApi.update(courseId, topicId, {
@@ -73,7 +83,8 @@ export default function LinkTopicPage() {
         data: updatedData
       });
       setTopic(prev => prev ? { ...prev, title: name, data: updatedData } : null);
-      toast.success('Settings saved successfully');
+      toast.success('Topic updated successfully!');
+      setActiveTab('link');
     } catch (err) {
       toast.error('Failed to save settings');
     } finally {
@@ -136,7 +147,7 @@ export default function LinkTopicPage() {
           </div>
 
           {isTeacher ? (
-            <Tabs defaultValue="link" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="border-b-[1.5px] border-white/20 w-full">
                 <TabsList className="bg-transparent p-0 flex justify-start gap-8 w-full h-auto">
                   <TabsTrigger

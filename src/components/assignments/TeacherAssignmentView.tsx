@@ -13,9 +13,10 @@ import { TopicResponse } from '@/services/courseService';
 interface TeacherAssignmentViewProps {
   assignment: TopicResponse;
   courseId: string;
+  onTabChange?: (value: string) => void;
 }
 
-export function TeacherAssignmentView({ assignment, courseId }: TeacherAssignmentViewProps) {
+export function TeacherAssignmentView({ assignment, courseId, onTabChange }: TeacherAssignmentViewProps) {
   const { user } = useAuth();
   const assignmentData = assignment.data || {};
   
@@ -90,7 +91,10 @@ export function TeacherAssignmentView({ assignment, courseId }: TeacherAssignmen
           {assignmentData.description || "No description provided."}
         </p>
 
-        <button className="bg-[#06B6D4] hover:bg-[#0891b2] transition-colors text-white text-[14px] font-bold px-6 py-2.5 rounded-lg shadow-sm w-fit mb-8">
+        <button 
+          onClick={() => onTabChange?.("submissions")}
+          className="bg-[#06B6D4] hover:bg-[#0891b2] transition-colors text-white text-[14px] font-bold px-6 py-2.5 rounded-lg shadow-sm w-fit mb-8"
+        >
           Grade
         </button>
 

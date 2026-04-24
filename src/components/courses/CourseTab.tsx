@@ -21,6 +21,7 @@ import {
   Lock,
   Loader2,
   Globe,
+  Paperclip,
 } from "lucide-react";
 import {
   Accordion,
@@ -38,12 +39,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { sectionApi } from "@/services/sectionService";
 import { topicApi } from "@/services/topicService";
+import { paymentApi } from "@/services/paymentService";
 
 interface CourseTabProps {
   course: CourseResponse;
+  onUpdate?: () => void;
 }
 
-export function CourseTab({ course }: CourseTabProps) {
+export function CourseTab({ course, onUpdate }: CourseTabProps) {
   const router = useRouter();
   const { user } = useAuth();
   const [isEditMode, setIsEditMode] = useState(false);
@@ -100,7 +103,7 @@ export function CourseTab({ course }: CourseTabProps) {
     try {
       await courseApi.join(course.id);
       toast.success("Joined course successfully!");
-      window.location.reload();
+      if (onUpdate) onUpdate();
     } catch (err: any) {
       console.error("Failed to join course:", err);
       toast.error(err.response?.data?.message || "Failed to join course");
@@ -118,20 +121,26 @@ export function CourseTab({ course }: CourseTabProps) {
   };
 
   const handlePayment = async (paymentMethod: string) => {
+    if (paymentMethod !== "vnpay") {
+      toast.info(
+        "This payment method is currently unavailable. Please use VNPay.",
+      );
+      return;
+    }
+
     setIsProcessingPayment(true);
     try {
-      // TODO: Integrate with actual payment API when backend is ready
-      // For now, simulate payment success and join course
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // After "payment" success, join the course
-      await courseApi.join(course.id);
-      toast.success("Payment successful! You are now enrolled in this course.");
-      setShowPaymentModal(false);
-      window.location.reload();
+      const response = await paymentApi.createPaymentUrl(course.id);
+      if (response.data?.url) {
+        window.location.href = response.data.url;
+      } else {
+        throw new Error("Failed to generate payment URL");
+      }
     } catch (err: any) {
       console.error("Payment failed:", err);
-      toast.error(err.response?.data?.message || "Payment failed. Please try again.");
+      toast.error(
+        err.response?.data?.message || "Payment failed. Please try again.",
+      );
     } finally {
       setIsProcessingPayment(false);
     }
@@ -142,11 +151,12 @@ export function CourseTab({ course }: CourseTabProps) {
     try {
       await courseApi.update(course.id, {
         ...courseForm,
-        price: courseForm.price || 0,
+        price: Number(courseForm.price) || 0,
         isPublished: courseForm.isPublished,
       });
       toast.success("Course details updated successfully!");
-      window.location.reload();
+      setShowCourseModal(false);
+      if (onUpdate) onUpdate();
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to update course");
     } finally {
@@ -167,7 +177,9 @@ export function CourseTab({ course }: CourseTabProps) {
         description: sectionForm.description,
       });
       toast.success("Section added successfully!");
-      window.location.reload();
+      setShowSectionModal(false);
+      setSectionForm({ title: "", description: "" });
+      if (onUpdate) onUpdate();
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to add section");
     } finally {
@@ -179,17 +191,43 @@ export function CourseTab({ course }: CourseTabProps) {
     if (!activeSectionIdForTopic) return;
     setIsSaving(true);
     try {
-      await topicApi.create(course.id, {
+      const res = await topicApi.create(course.id, {
         title: `New ${type.charAt(0).toUpperCase() + type.slice(1)}`,
         type: type.toLowerCase(),
         sectionId: activeSectionIdForTopic,
       });
-      toast.success("Topic created successfully!");
+
+      const newTopic = res.data;
       setActiveSectionIdForTopic(null);
-      window.location.reload();
+      if (onUpdate) onUpdate();
+
+      // Better UX: Show toast with action instead of forced redirect
+      const topicType = newTopic.type?.toLowerCase();
+      let path = "";
+      if (topicType === "assignment") path = `/assignments/${newTopic.id}`;
+      else if (topicType === "quiz") path = `/quizzes/${newTopic.id}`;
+      else if (topicType === "page") path = `/pages/${newTopic.id}`;
+      else if (topicType === "file") path = `/files/${newTopic.id}`;
+      else if (topicType === "link") path = `/links/${newTopic.id}`;
+      else if (topicType === "meeting") path = `/meetings/${newTopic.id}`;
+
+      toast.success(
+        `${type.charAt(0).toUpperCase() + type.slice(1)} created!`,
+        {
+          description: "You can continue adding more or edit this one.",
+          action: path
+            ? {
+                label: "Edit now",
+                onClick: () =>
+                  router.push(`${path}?courseId=${course.id}&tab=settings`),
+              }
+            : undefined,
+        },
+      );
     } catch (err: any) {
       console.error(err);
       toast.error(err.response?.data?.message || "Failed to create topic");
+      setActiveSectionIdForTopic(null);
     } finally {
       setIsSaving(false);
     }
@@ -314,7 +352,9 @@ export function CourseTab({ course }: CourseTabProps) {
       </div>
 
       <div className="flex flex-col xs:flex-row justify-between xs:items-center gap-4 mb-6">
-        <h2 className="text-[18px] sm:text-[20px] font-bold text-[#374151]">Course Content</h2>
+        <h2 className="text-[18px] sm:text-[20px] font-bold text-[#374151]">
+          Course Content
+        </h2>
         <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-hide pb-1">
           <button className="text-[12px] sm:text-[14px] font-bold text-[#3B82F6] hover:underline underline-offset-4 whitespace-nowrap">
             Collapse all
@@ -405,9 +445,32 @@ export function CourseTab({ course }: CourseTabProps) {
                                 <span className="font-bold text-[#4B5563] group-hover/item:text-[#3B82F6] transition-colors">
                                   {topic.title}
                                 </span>
-                                <span className="text-[11px] text-[#9CA3AF] uppercase tracking-wider font-bold">
-                                  {topic.type}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[11px] text-[#9CA3AF] uppercase tracking-wider font-bold">
+                                    {topic.type}
+                                  </span>
+                                  {topic.type === "file" &&
+                                    topic.data?.file?.name && (
+                                      <span className="text-[11px] text-blue-500 font-medium flex items-center gap-1">
+                                        • <Paperclip className="w-3 h-3" />{" "}
+                                        {topic.data.file.name}
+                                      </span>
+                                    )}
+                                  {topic.type === "link" &&
+                                    topic.data?.url && (
+                                      <span className="text-[11px] text-emerald-500 font-medium flex items-center gap-1">
+                                        • <LinkIcon className="w-3 h-3" />{" "}
+                                        {topic.data.url.length > 30 ? topic.data.url.substring(0, 30) + "..." : topic.data.url}
+                                      </span>
+                                    )}
+                                  {topic.type === "meeting" &&
+                                    topic.data?.description && (
+                                      <span className="text-[11px] text-orange-500 font-medium flex items-center gap-1">
+                                        • <Video className="w-3 h-3" />{" "}
+                                        {topic.data.description.length > 30 ? topic.data.description.substring(0, 30) + "..." : topic.data.description}
+                                      </span>
+                                    )}
+                                </div>
                               </div>
                             </div>
                             <div className="flex items-center gap-4">
@@ -588,20 +651,27 @@ export function CourseTab({ course }: CourseTabProps) {
                   Price (USD)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6B7280] text-[14px]">$</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6B7280] text-[14px]">
+                    $
+                  </span>
                   <input
                     type="number"
                     min="0"
                     step="0.01"
                     value={courseForm.price || ""}
                     onChange={(e) =>
-                      setCourseForm({ ...courseForm, price: parseFloat(e.target.value) || 0 })
+                      setCourseForm({
+                        ...courseForm,
+                        price: parseFloat(e.target.value) || 0,
+                      })
                     }
                     placeholder="0.00"
                     className="w-full border border-gray-200 rounded-xl pl-8 pr-4 py-3 text-[14px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
-                <p className="text-[#9CA3AF] text-[12px]">Set 0 for free course</p>
+                <p className="text-[#9CA3AF] text-[12px]">
+                  Set 0 for free course
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -611,7 +681,9 @@ export function CourseTab({ course }: CourseTabProps) {
                 <div className="flex gap-3">
                   <button
                     type="button"
-                    onClick={() => setCourseForm({ ...courseForm, isPublished: true })}
+                    onClick={() =>
+                      setCourseForm({ ...courseForm, isPublished: true })
+                    }
                     className={`flex-1 h-12 rounded-xl border text-[14px] font-medium transition-all flex items-center justify-center gap-2 ${
                       courseForm.isPublished
                         ? "bg-[#10B981] border-[#10B981] text-white"
@@ -623,7 +695,9 @@ export function CourseTab({ course }: CourseTabProps) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setCourseForm({ ...courseForm, isPublished: false })}
+                    onClick={() =>
+                      setCourseForm({ ...courseForm, isPublished: false })
+                    }
                     className={`flex-1 h-12 rounded-xl border text-[14px] font-medium transition-all flex items-center justify-center gap-2 ${
                       !courseForm.isPublished
                         ? "bg-[#6B7280] border-[#6B7280] text-white"
@@ -848,119 +922,138 @@ export function CourseTab({ course }: CourseTabProps) {
           </div>
         </div>
       )}
-      {/* Payment Modal */}
       {showPaymentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-[24px] w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-300 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+          <div className="bg-white rounded-[40px] w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-500 overflow-hidden border border-white/20">
+            {/* Top Branding / Banner */}
+            <div className="h-2 bg-gradient-to-r from-blue-600 via-blue-400 to-blue-600"></div>
+
             {/* Header */}
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+            <div className="p-8 pb-6 flex items-start justify-between">
               <div>
-                <h2 className="text-[#1F2937] font-bold text-[20px]">
-                  Complete Payment
+                <h2 className="text-[#111827] font-black text-[26px] tracking-tight">
+                  Checkout
                 </h2>
-                <p className="text-[#6B7280] text-[14px] mt-1">
-                  Secure payment for {course.title}
+                <p className="text-[#6B7280] text-[15px] mt-1 font-medium">
+                  Enroll in{" "}
+                  <span className="text-blue-600 font-bold">
+                    {course.title}
+                  </span>
                 </p>
               </div>
               <button
                 onClick={() => setShowPaymentModal(false)}
                 disabled={isProcessingPayment}
-                className="text-[#9CA3AF] hover:text-[#EF4444] hover:bg-red-50 p-2 rounded-xl transition-all disabled:opacity-50"
+                className="text-[#9CA3AF] hover:text-[#EF4444] hover:bg-red-50 p-2.5 rounded-2xl transition-all disabled:opacity-50"
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             </div>
 
-            {/* Order Summary */}
-            <div className="p-6 bg-[#F9FAFB]">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[#6B7280] text-[14px]">Course</span>
-                <span className="text-[#1F2937] font-medium text-[14px] max-w-[200px] truncate">
-                  {course.title}
+            {/* Price Card */}
+            <div className="mx-8 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-[28px] border border-blue-100/50 mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-blue-600/70 font-bold text-[13px] uppercase tracking-widest">
+                  Amount to Pay
                 </span>
+                <div className="bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-blue-100 flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                  <span className="text-[11px] font-black text-blue-800 uppercase tracking-tighter">
+                    Secure Link
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[#6B7280] text-[14px]">Instructor</span>
-                <span className="text-[#1F2937] font-medium text-[14px]">
-                  {course.creator?.username || "Unknown"}
-                </span>
-              </div>
-              <div className="border-t border-gray-200 my-4"></div>
-              <div className="flex items-center justify-between">
-                <span className="text-[#1F2937] font-bold text-[16px]">Total</span>
-                <span className="text-[#F97316] font-black text-[28px]">
-                  ${course.price}
+              <div className="flex items-baseline gap-2">
+                <span className="text-[#111827] font-black text-[36px] tracking-tighter">
+                  {new Intl.NumberFormat("vi-VN", {
+                    style: "currency",
+                    currency: "VND",
+                  }).format(course.price || 0)}
                 </span>
               </div>
             </div>
 
             {/* Payment Methods */}
-            <div className="p-6 space-y-4">
-              <p className="text-[#6B7280] text-[13px] font-medium uppercase tracking-wider">
-                Select payment method
+            <div className="px-8 pb-10 space-y-5">
+              <p className="text-[#374151] text-[14px] font-bold ml-1">
+                Choose Payment Method
               </p>
 
-              {/* Credit Card Option */}
+              {/* VNPay Option - The Primary One */}
               <button
-                onClick={() => handlePayment("credit_card")}
+                onClick={() => handlePayment("vnpay")}
                 disabled={isProcessingPayment}
-                className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-[#3B82F6] hover:bg-blue-50/30 transition-all disabled:opacity-50"
+                className="group relative w-full flex items-center gap-5 p-5 border-2 border-blue-100 bg-blue-50/20 rounded-[24px] hover:border-blue-500 hover:bg-white transition-all shadow-sm hover:shadow-xl hover:shadow-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <div className="w-12 h-12 bg-[#1F2937] rounded-xl flex items-center justify-center">
-                  <CreditCard className="w-6 h-6 text-white" />
+                <div className="w-14 h-14 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center p-2 group-hover:scale-105 transition-transform">
+                  <img
+                    src="https://sandbox.vnpayment.vn/paymentv2/Images/brands/logo-vnpay.png"
+                    alt="VNPay"
+                    className="w-full h-auto object-contain"
+                  />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="font-bold text-[#1F2937] text-[15px]">Credit / Debit Card</p>
-                  <p className="text-[#6B7280] text-[12px]">Visa, Mastercard, AMEX</p>
+                  <p className="font-black text-[#111827] text-[17px]">
+                    VNPay Gateway
+                  </p>
+                  <p className="text-[#6B7280] text-[13px] font-medium">
+                    Banking, QR Code, E-Wallet
+                  </p>
                 </div>
-                <div className="flex gap-1">
-                  <div className="w-8 h-5 bg-[#1A1F71] rounded"></div>
-                  <div className="w-8 h-5 bg-[#EB001B] rounded-l"></div>
+                <div className="w-6 h-6 rounded-full border-2 border-blue-500 flex items-center justify-center">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full scale-0 group-hover:scale-100 transition-transform"></div>
                 </div>
               </button>
 
-              {/* PayPal Option */}
-              <button
-                onClick={() => handlePayment("paypal")}
-                disabled={isProcessingPayment}
-                className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-[#3B82F6] hover:bg-blue-50/30 transition-all disabled:opacity-50"
-              >
-                <div className="w-12 h-12 bg-[#003087] rounded-xl flex items-center justify-center">
-                  <span className="text-white font-black text-[18px]">P</span>
+              {/* Disabled/Mock options for visual completeness */}
+              <div className="grid grid-cols-2 gap-4 opacity-40 grayscale pointer-events-none">
+                <div className="flex items-center gap-3 p-4 border border-gray-200 rounded-2xl">
+                  <CreditCard className="w-5 h-5" />
+                  <span className="text-[13px] font-bold">Card</span>
                 </div>
-                <div className="flex-1 text-left">
-                  <p className="font-bold text-[#1F2937] text-[15px]">PayPal</p>
-                  <p className="text-[#6B7280] text-[12px]">Pay with your PayPal account</p>
+                <div className="flex items-center gap-3 p-4 border border-gray-200 rounded-2xl">
+                  <Globe className="w-5 h-5" />
+                  <span className="text-[13px] font-bold">PayPal</span>
                 </div>
-              </button>
-
-              {/* Bank Transfer Option */}
-              <button
-                onClick={() => handlePayment("bank_transfer")}
-                disabled={isProcessingPayment}
-                className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-[#3B82F6] hover:bg-blue-50/30 transition-all disabled:opacity-50"
-              >
-                <div className="w-12 h-12 bg-[#10B981] rounded-xl flex items-center justify-center">
-                  <span className="text-white font-black text-[16px]">BT</span>
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="font-bold text-[#1F2937] text-[15px]">Bank Transfer</p>
-                  <p className="text-[#6B7280] text-[12px]">Direct bank payment</p>
-                </div>
-              </button>
+              </div>
 
               {isProcessingPayment && (
-                <div className="flex items-center justify-center py-4">
-                  <Loader2 className="w-6 h-6 animate-spin text-[#3B82F6]" />
-                  <span className="ml-2 text-[#6B7280] text-[14px]">Processing payment...</span>
+                <div className="flex flex-col items-center justify-center py-4 animate-in fade-in duration-300">
+                  <div className="relative">
+                    <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+                    <div className="absolute inset-0 bg-blue-500/10 rounded-full blur-xl scale-150"></div>
+                  </div>
+                  <span className="mt-4 text-[#111827] font-black text-[15px] tracking-tight">
+                    Connecting to VNPay...
+                  </span>
+                  <span className="text-[#6B7280] text-[13px] mt-1">
+                    Please do not close this window
+                  </span>
                 </div>
               )}
             </div>
 
-            {/* Footer */}
-            <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-center gap-2 text-[#6B7280] text-[12px]">
-              <Lock className="w-3 h-3" />
-              <span>Your payment is secured with SSL encryption</span>
+            {/* Footer / Safety Info */}
+            <div className="bg-[#F9FAFB] p-6 flex flex-col items-center gap-3 border-t border-gray-100">
+              <div className="flex items-center gap-4 text-[#9CA3AF]">
+                <div className="flex flex-col items-center gap-1">
+                  <Lock className="w-4 h-4" />
+                  <span className="text-[10px] font-bold uppercase tracking-tighter">
+                    Secure
+                  </span>
+                </div>
+                <div className="w-px h-6 bg-gray-200"></div>
+                <div className="flex flex-col items-center gap-1">
+                  <Check className="w-4 h-4 text-green-500" />
+                  <span className="text-[10px] font-bold uppercase tracking-tighter">
+                    Verified
+                  </span>
+                </div>
+              </div>
+              <p className="text-[#9CA3AF] text-[11px] font-medium text-center leading-relaxed px-8">
+                By clicking pay, you agree to our Terms of Service. All
+                transactions are encrypted and secured by VNPay.
+              </p>
             </div>
           </div>
         </div>

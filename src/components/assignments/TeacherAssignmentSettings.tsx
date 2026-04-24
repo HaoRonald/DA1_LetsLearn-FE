@@ -4,13 +4,17 @@ import { topicApi } from '@/services/topicService';
 import { toast } from 'sonner';
 import { UploadCloud, Paperclip } from 'lucide-react';
 
+import { useRouter } from 'next/navigation';
+
 interface TeacherAssignmentSettingsProps {
   assignment: TopicResponse;
   courseId: string;
   onUpdate?: () => void;
+  onTabChange?: (tab: string) => void;
 }
 
-export function TeacherAssignmentSettings({ assignment, courseId, onUpdate }: TeacherAssignmentSettingsProps) {
+export function TeacherAssignmentSettings({ assignment, courseId, onUpdate, onTabChange }: TeacherAssignmentSettingsProps) {
+  const router = useRouter();
   const assignmentData = assignment.data || {};
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -64,6 +68,8 @@ export function TeacherAssignmentSettings({ assignment, courseId, onUpdate }: Te
       await topicApi.update(courseId, assignment.id, payload);
       toast.success("Settings saved successfully!");
       if (onUpdate) onUpdate();
+      if (onTabChange) onTabChange("assignment");
+      router.refresh();
     } catch (error: any) {
       console.error("Save error:", error);
       toast.error(error.response?.data?.message || "Failed to save settings");

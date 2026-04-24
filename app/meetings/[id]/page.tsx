@@ -36,6 +36,7 @@ export default function MeetingTopicPage() {
   const { id: topicId } = useParams() as { id: string };
   const searchParams = useSearchParams();
   const courseId = searchParams.get('courseId');
+  const initialTab = searchParams.get('tab') || 'detail';
   const router = useRouter();
   const { user } = useAuth();
   
@@ -43,6 +44,7 @@ export default function MeetingTopicPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
+  const [activeTab, setActiveTab] = useState(initialTab);
   
   // Comments state
   const [comments, setComments] = useState<GetCommentResponse[]>([]);
@@ -65,6 +67,13 @@ export default function MeetingTopicPage() {
     fetchTopic();
     fetchComments();
   }, [courseId, topicId]);
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const fetchTopic = async () => {
     try {
@@ -133,8 +142,8 @@ export default function MeetingTopicPage() {
         data: updatedData
       });
 
-      toast.success('Meeting settings updated successfully');
-      fetchTopic(); // Refresh data
+      toast.success('Topic updated successfully!');
+      setActiveTab('detail');
     } catch (err) {
       console.error('Failed to save meeting settings:', err);
       toast.error('Failed to save settings');
@@ -275,7 +284,7 @@ export default function MeetingTopicPage() {
 
         {/* Content Section with Tabs */}
         <div className="max-w-7xl mx-auto w-full px-6 md:px-12 -mt-12 pb-24 relative z-20">
-          <Tabs defaultValue="detail" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="bg-white rounded-3xl p-2 shadow-xl shadow-slate-200/50 mb-8 inline-flex border border-slate-100">
               <TabsList className="bg-transparent h-auto p-0 flex gap-1">
                 <TabsTrigger

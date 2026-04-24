@@ -15,12 +15,14 @@ export default function FileTopicPage() {
   const { id: topicId } = useParams() as { id: string };
   const searchParams = useSearchParams();
   const courseId = searchParams.get('courseId');
+  const initialTab = searchParams.get('tab') || 'file';
   const router = useRouter();
   const { user } = useAuth();
   
   const [topic, setTopic] = useState<TopicResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   // Form states for Settings tab
   const [name, setName] = useState('');
@@ -28,40 +30,55 @@ export default function FileTopicPage() {
   const [fileName, setFileName] = useState('');
   const [fileUrl, setFileUrl] = useState('');
 
-  useEffect(() => {
+  const fetchTopic = async () => {
     if (!courseId || !topicId) {
       setIsLoading(false);
       return;
     }
-    const fetchTopic = async () => {
-      try {
-        const res = await courseApi.getTopicById(courseId, topicId);
-        setTopic(res.data);
-        setName(res.data.title || '');
-        const dataStr = res.data.data;
-        if (typeof dataStr === 'string') {
-          try {
-            const parsed = JSON.parse(dataStr);
-            setDescription(parsed.description || '');
-            setFileName(parsed.fileName || '');
-            setFileUrl(parsed.fileUrl || '');
-          } catch {
-             // raw fallback
-             setFileUrl(dataStr);
-          }
-        } else if (typeof dataStr === 'object') {
-            setDescription(dataStr?.description || '');
-            setFileName(dataStr?.fileName || '');
-            setFileUrl(dataStr?.fileUrl || '');
+    try {
+      const res = await courseApi.getTopicById(courseId, topicId);
+      const topicData = res.data;
+      setTopic(topicData);
+      setName(topicData.title || '');
+      
+      let parsedData: any = null;
+      if (typeof topicData.data === 'string') {
+        try {
+          parsedData = JSON.parse(topicData.data);
+        } catch (e) {
+          console.error("Failed to parse topic data JSON", e);
         }
-      } catch (err) {
-        console.error('Failed to fetch file topic:', err);
-      } finally {
-        setIsLoading(false);
+      } else {
+        parsedData = topicData.data;
       }
-    };
+
+      if (parsedData) {
+        setDescription(parsedData.description || '');
+        if (parsedData.file) {
+          setFileName(parsedData.file.name || '');
+          setFileUrl(parsedData.file.downloadUrl || '');
+        } else {
+          setFileName(parsedData.fileName || '');
+          setFileUrl(parsedData.fileUrl || '');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch file topic:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchTopic();
   }, [courseId, topicId]);
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -92,9 +109,13 @@ export default function FileTopicPage() {
     try {
       const updatedData = {
         description,
-        fileName,
-        fileUrl
+        file: {
+          name: fileName,
+          displayUrl: fileUrl,
+          downloadUrl: fileUrl
+        }
       };
+      console.log("Saving topic data:", updatedData);
       await topicApi.update(courseId, topicId, {
         id: topicId,
         title: name,
@@ -102,8 +123,9 @@ export default function FileTopicPage() {
         data: updatedData
       });
       setTopic(prev => prev ? { ...prev, title: name, data: updatedData } : null);
-      toast.success('Settings saved successfully');
-    } catch (err) {
+      toast.success("Topic updated successfully!");
+      setActiveTab('file');
+    } catch (err: any) {
       toast.error('Failed to save settings');
     } finally {
       setIsSaving(false);
@@ -167,7 +189,7 @@ export default function FileTopicPage() {
           </div>
 
           {isTeacher ? (
-            <Tabs defaultValue="file" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="border-b-[1.5px] border-white/20 w-full overflow-x-auto scrollbar-hide">
                 <TabsList className="bg-transparent p-0 flex justify-start gap-6 md:gap-8 min-w-max h-auto">
                   <TabsTrigger

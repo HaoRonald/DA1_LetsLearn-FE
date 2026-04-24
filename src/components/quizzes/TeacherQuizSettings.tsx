@@ -10,12 +10,17 @@ import { TopicResponse } from '@/services/courseService';
 import { topicApi, TopicQuizData, TopicQuizQuestion } from '@/services/topicService';
 import { toast } from 'sonner';
 
+import { useRouter } from 'next/navigation';
+
 interface TeacherQuizSettingsProps {
   quiz: TopicResponse;
   courseId: string;
+  onUpdate?: () => void;
+  onTabChange?: (tab: string) => void;
 }
 
-export function TeacherQuizSettings({ quiz, courseId }: TeacherQuizSettingsProps) {
+export function TeacherQuizSettings({ quiz, courseId, onUpdate, onTabChange }: TeacherQuizSettingsProps) {
+  const router = useRouter();
   const quizData: TopicQuizData = quiz.data || {};
 
   const [form, setForm] = useState({
@@ -57,6 +62,9 @@ export function TeacherQuizSettings({ quiz, courseId }: TeacherQuizSettingsProps
       };
       await topicApi.update(courseId, quiz.id, payload);
       toast.success('Quiz settings saved!');
+      if (onUpdate) onUpdate();
+      if (onTabChange) onTabChange('quiz');
+      router.refresh();
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to save settings');
     } finally {

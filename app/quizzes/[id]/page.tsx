@@ -69,37 +69,42 @@ export default function QuizDetailPage() {
   const { id: topicId } = useParams() as { id: string };
   const searchParams = useSearchParams();
   const courseId = searchParams.get("courseId");
+  const initialTab = searchParams.get("tab") || "quiz";
   const router = useRouter();
   const { user } = useAuth();
 
   // Typed, lifted quiz state
   const [quiz, setQuiz] = useState<QuizTopic | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   // Callback child components call after mutations
   const handleQuizUpdated = useCallback((updated: QuizTopic) => {
     setQuiz(updated);
   }, []);
 
-  useEffect(() => {
-    if (!courseId || !topicId) {
+  const fetchQuiz = useCallback(async () => {
+    if (!courseId || !topicId) return;
+    try {
+      const response = await courseApi.getTopicById(courseId, topicId);
+      setQuiz(toQuizTopic(response.data));
+    } catch (error) {
+      console.error("Failed to fetch quiz:", error);
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    const fetchQuiz = async () => {
-      try {
-        const response = await courseApi.getTopicById(courseId, topicId);
-        setQuiz(toQuizTopic(response.data));
-      } catch (error) {
-        console.error("Failed to fetch quiz:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchQuiz();
   }, [courseId, topicId]);
+
+  useEffect(() => {
+    fetchQuiz();
+  }, [fetchQuiz]);
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   // ── Loading ──────────────────────────────────────────────────────────────────
 
@@ -209,7 +214,7 @@ export default function QuizDetailPage() {
           </div>
 
           {isTeacher ? (
-            <Tabs defaultValue="quiz" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="border-b-2 border-white/20 w-full overflow-x-auto scrollbar-hide">
                 <TabsList
                   variant="line"
@@ -239,7 +244,12 @@ export default function QuizDetailPage() {
                   <TeacherQuizView quiz={legacyQuiz} courseId={courseId} />
                 </TabsContent>
                 <TabsContent value="settings" className="mt-0 outline-none w-full">
-                  <TeacherQuizSettings quiz={legacyQuiz} courseId={courseId} />
+                  <TeacherQuizSettings 
+                    quiz={legacyQuiz} 
+                    courseId={courseId} 
+                    onUpdate={fetchQuiz}
+                    onTabChange={setActiveTab}
+                  />
                 </TabsContent>
                 <TabsContent value="questions" className="mt-0 outline-none w-full">
                   <TeacherQuizQuestions

@@ -19,30 +19,39 @@ export default function AssignmentDetailPage() {
   const { id: topicId } = useParams() as { id: string };
   const searchParams = useSearchParams();
   const courseId = searchParams.get("courseId");
+  const initialTab = searchParams.get("tab") || "assignment";
   const router = useRouter();
 
   const [assignment, setAssignment] = useState<TopicResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  const fetchAssignment = async () => {
+    if (!courseId || !topicId) return;
+    try {
+      const response = await courseApi.getTopicById(courseId, topicId);
+      setAssignment(response.data);
+    } catch (error) {
+      console.error("Failed to fetch assignment:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (!courseId || !topicId) {
-      setLoading(false);
-      return;
-    }
-
-    const fetchAssignment = async () => {
-      try {
-        const response = await courseApi.getTopicById(courseId, topicId);
-        setAssignment(response.data);
-      } catch (error) {
-        console.error("Failed to fetch assignment:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchAssignment();
   }, [courseId, topicId]);
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  const handleUpdate = () => {
+    fetchAssignment();
+  };
 
   const isTeacher = user?.role === "Teacher" || user?.role === "Admin";
   // If the user's role allows editing, or if we verify they are the creator of this assignment's course
@@ -126,7 +135,7 @@ export default function AssignmentDetailPage() {
   return (
     <MainLayout headerTitle={breadcrumbs}>
       <div className="flex flex-col min-h-full bg-[#f9fafb] relative">
-        <Tabs defaultValue="assignment" className="w-full flex-1 flex flex-col">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col">
           {/* Purple Top Background */}
           <div className="w-full bg-[#7E22CE] pt-10 pb-20 px-8 md:px-12">
             <div className="flex flex-col gap-6 mb-8 text-white">
@@ -206,7 +215,11 @@ export default function AssignmentDetailPage() {
                   value="assignment"
                   className="mt-0 outline-none w-full"
                 >
-                  <TeacherAssignmentView assignment={assignment} courseId={courseId!} />
+                  <TeacherAssignmentView 
+                    assignment={assignment} 
+                    courseId={courseId!} 
+                    onTabChange={setActiveTab}
+                  />
                 </TabsContent>
                 <TabsContent
                   value="settings"
@@ -215,6 +228,8 @@ export default function AssignmentDetailPage() {
                   <TeacherAssignmentSettings
                     assignment={assignment}
                     courseId={courseId!}
+                    onUpdate={handleUpdate}
+                    onTabChange={setActiveTab}
                   />
                 </TabsContent>
                 <TabsContent

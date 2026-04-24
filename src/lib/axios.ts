@@ -29,7 +29,8 @@ axiosInstance.interceptors.response.use(
       error.config?.url?.includes("/auth/login") ||
       error.config?.url?.includes("/auth/signup") ||
       error.config?.url?.includes("/auth/logout") ||
-      error.config?.url?.includes("/User/me");
+      error.config?.url?.includes("/User/me") ||
+      error.config?.url?.includes("/payments");
 
     const isOnPublicPage =
       typeof window !== "undefined" &&

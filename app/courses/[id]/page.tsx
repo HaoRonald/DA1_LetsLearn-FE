@@ -20,20 +20,21 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchCourse = async () => {
-      try {
-        const response = await courseApi.getById(unwrappedParams.id);
-        setCourse(response.data);
-      } catch (err) {
-        console.error('Failed to fetch course:', err);
-        setError('Course not found or access denied');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCourse();
+  const fetchCourse = React.useCallback(async () => {
+    try {
+      const response = await courseApi.getById(unwrappedParams.id);
+      setCourse(response.data);
+    } catch (err) {
+      console.error('Failed to fetch course:', err);
+      setError('Course not found or access denied');
+    } finally {
+      setLoading(false);
+    }
   }, [unwrappedParams.id]);
+
+  useEffect(() => {
+    fetchCourse();
+  }, [fetchCourse]);
 
   if (loading) {
     return (
@@ -104,7 +105,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
 
           <div className="flex-1 overflow-y-auto px-4 md:px-6 lg:px-8 py-6">
             <TabsContent value="course" className="mt-0 outline-none">
-              <CourseTab course={course} />
+              <CourseTab course={course} onUpdate={fetchCourse} />
             </TabsContent>
             
             <TabsContent value="activities" className="mt-0 outline-none">
