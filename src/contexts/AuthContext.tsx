@@ -10,25 +10,15 @@ import {
 import { User, AuthState } from "@/types";
 import axiosInstance from "@/lib/axios";
 import { authApi } from "@/services/authService";
+import { normalizeUser } from "@/lib/utils/user-utils";
 
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<User>;
   logout: () => void;
+  setUser: (user: User | null) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-
-// Helper to normalize user object from PascalCase to camelCase if necessary
-const normalizeUser = (user: any): User => {
-  return {
-    id: user.id || user.Id,
-    username: user.username || user.Username,
-    email: user.email || user.Email,
-    role: user.role || user.Role,
-    avatar: user.avatar || user.Avatar,
-    enrollments: user.enrollments || user.Enrollments || [],
-  };
-};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
@@ -104,8 +94,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = "/login";
   };
 
+  const setUser = (user: User | null) => {
+    setState((prev) => ({ ...prev, user }));
+  };
+
   return (
-    <AuthContext.Provider value={{ ...state, login, logout }}>
+    <AuthContext.Provider value={{ ...state, login, logout, setUser }}>
       {children}
     </AuthContext.Provider>
   );

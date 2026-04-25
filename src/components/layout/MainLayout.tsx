@@ -16,7 +16,9 @@ import {
   Users,
   BookOpen,
   BarChart3,
-  ArrowLeft
+  ArrowLeft,
+  LogOut,
+  UserIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
@@ -56,7 +58,7 @@ export default function MainLayout({
       <header className="h-16 border-b border-gray-200 flex items-center justify-between px-4 lg:px-6 bg-white shrink-0 z-10 relative">
         <div className="flex items-center gap-4">
           {!isHomeActive && (
-            <button 
+            <button
               onClick={() => router.back()}
               className="p-2 hover:bg-gray-100 rounded-md text-[#6B7280] transition-colors"
               title="Go back"
@@ -130,7 +132,7 @@ export default function MainLayout({
                         className="flex items-center gap-3 px-4 py-2.5 text-[14px] font-bold text-[#4B5563] hover:bg-gray-50 hover:text-[#3B82F6] transition-all"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        <GraduationCap className="w-4 h-4" /> View Profile
+                        <UserIcon className="w-4 h-4" /> View Profile
                       </Link>
                       <Link
                         href="/settings"
@@ -147,7 +149,7 @@ export default function MainLayout({
                         }}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-[14px] font-bold text-[#EF4444] hover:bg-red-50 transition-all"
                       >
-                        <LayoutDashboard className="w-4 h-4" /> Logout
+                        <LogOut className="w-4 h-4" /> Logout
                       </button>
                     </>
                   ) : (
@@ -176,12 +178,16 @@ export default function MainLayout({
               <div className="px-6 mb-8">
                 <div className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-xl border border-red-100">
                   <ShieldCheck className="w-5 h-5" />
-                  <span className="text-[12px] font-black uppercase tracking-wider">Admin Control</span>
+                  <span className="text-[12px] font-black uppercase tracking-wider">
+                    Admin Control
+                  </span>
                 </div>
               </div>
 
               <nav className="space-y-1 px-3 mb-6">
-                <p className="px-4 text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">Main Menu</p>
+                <p className="px-4 text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                  Main Menu
+                </p>
                 <Link
                   href="/admin"
                   className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "dashboard" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`}
@@ -206,7 +212,9 @@ export default function MainLayout({
               </nav>
 
               <nav className="space-y-1 px-3 mb-6">
-                <p className="px-4 text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">Analysis</p>
+                <p className="px-4 text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                  Analysis
+                </p>
                 <Link
                   href="/admin?tab=statistics"
                   className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "statistics" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`}
@@ -223,7 +231,9 @@ export default function MainLayout({
                     className="flex items-center gap-4 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
                   >
                     <Settings className="w-5 h-5" />
-                    <span className="text-[14px] font-bold">System Settings</span>
+                    <span className="text-[14px] font-bold">
+                      System Settings
+                    </span>
                   </Link>
                 </div>
               </div>
@@ -240,15 +250,6 @@ export default function MainLayout({
                   <HomeIcon className="w-5 h-5" />
                   <span className="text-[14px] font-bold">Home</span>
                 </Link>
-                {isAdminOrTeacher && (
-                  <Link
-                    href="/dashboard"
-                    className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${isDashboardActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
-                  >
-                    <LayoutDashboard className="w-5 h-5" />
-                    <span className="text-[14px] font-bold">Dashboard</span>
-                  </Link>
-                )}
                 <Link
                   href="/calendar"
                   className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${isCalendarActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
