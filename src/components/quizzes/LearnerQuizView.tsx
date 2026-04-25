@@ -15,7 +15,7 @@ interface LearnerQuizViewProps {
   courseId: string;
 }
 
-export function LearnerQuizView({ quiz, courseId }: LearnerQuizViewProps) {
+export function StudentQuizView({ quiz, courseId }: LearnerQuizViewProps) {
   const quizData: TopicQuizData = quiz.data || {};
   const router = useRouter();
 

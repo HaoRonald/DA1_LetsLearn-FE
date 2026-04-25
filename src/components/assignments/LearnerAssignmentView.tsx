@@ -14,7 +14,7 @@ interface LearnerAssignmentViewProps {
   courseId: string;
 }
 
-export function LearnerAssignmentView({ assignment, courseId }: LearnerAssignmentViewProps) {
+export function StudentAssignmentView({ assignment, courseId }: LearnerAssignmentViewProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [myResponse, setMyResponse] = useState<AssignmentResponseDTO | null>(null);

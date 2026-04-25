@@ -63,7 +63,6 @@ export function TeacherQuizSettings({ quiz, courseId, onUpdate, onTabChange }: T
       await topicApi.update(courseId, quiz.id, payload);
       toast.success('Quiz settings saved!');
       if (onUpdate) onUpdate();
-      if (onTabChange) onTabChange('quiz');
       router.refresh();
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to save settings');
@@ -183,11 +182,14 @@ export function TeacherQuizSettings({ quiz, courseId, onUpdate, onTabChange }: T
       </div>
 
       {/* ── Save Button ─────────────────────────────────────────── */}
-      <div className="flex justify-center pt-4">
-        <button onClick={handleSave} disabled={isSaving}
-          className="bg-[#DB2777] hover:bg-pink-700 transition-colors text-white text-[14px] font-bold px-8 py-2.5 rounded-lg shadow-sm disabled:opacity-50 flex items-center gap-2">
+      <div className="flex justify-center pt-8 border-t border-gray-100 mt-8">
+        <button 
+          onClick={handleSave} 
+          disabled={isSaving}
+          className="bg-pink-600 hover:bg-pink-700 text-white font-black px-10 py-3 rounded-xl shadow-lg shadow-pink-200 transition-all hover:scale-[1.02] active:scale-[0.98] min-w-[140px] flex items-center justify-center gap-2"
+        >
           {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-          {isSaving ? 'Saving...' : 'Save settings'}
+          {isSaving ? 'Saving...' : 'Save Settings'}
         </button>
       </div>
     </div>

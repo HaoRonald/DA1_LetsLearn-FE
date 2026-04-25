@@ -2,7 +2,7 @@ import { TopicResponse } from '@/services/courseService';
 import { useRef, useState } from 'react';
 import { topicApi } from '@/services/topicService';
 import { toast } from 'sonner';
-import { UploadCloud, Paperclip } from 'lucide-react';
+import { UploadCloud, Paperclip, Loader2 } from 'lucide-react';
 
 import { useRouter } from 'next/navigation';
 
@@ -68,7 +68,6 @@ export function TeacherAssignmentSettings({ assignment, courseId, onUpdate, onTa
       await topicApi.update(courseId, assignment.id, payload);
       toast.success("Settings saved successfully!");
       if (onUpdate) onUpdate();
-      if (onTabChange) onTabChange("assignment");
       router.refresh();
     } catch (error: any) {
       console.error("Save error:", error);
@@ -297,13 +296,14 @@ export function TeacherAssignmentSettings({ assignment, courseId, onUpdate, onTa
         </div>
       </div>
 
-      <div className="flex justify-center pt-4 border-t border-gray-100 mt-6">
+      <div className="flex justify-center pt-8 border-t border-gray-100 mt-8">
         <button 
           onClick={handleSave}
           disabled={isSaving}
-          className="bg-[#3B82F6] hover:bg-blue-600 transition-colors text-white text-[14px] font-bold px-8 py-2.5 rounded-lg shadow-sm disabled:opacity-50"
+          className="bg-purple-600 hover:bg-purple-700 text-white font-black px-10 py-3 rounded-xl shadow-lg shadow-purple-200 transition-all hover:scale-[1.02] active:scale-[0.98] min-w-[140px] flex items-center justify-center gap-2"
         >
-          {isSaving ? "Saving..." : "Save"}
+          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+          {isSaving ? "Saving..." : "Save Settings"}
         </button>
       </div>
 

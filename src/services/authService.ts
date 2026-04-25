@@ -14,7 +14,7 @@ export const authApi = {
   login: (email: string, password: string) =>
     axiosInstance.post<LoginResponse>('/auth/login', { email, password }),
 
-  register: (username: string, email: string, password: string, role: string = 'Learner') =>
+  register: (username: string, email: string, password: string, role: string = 'Student') =>
     axiosInstance.post<{ message: string }>('/auth/signup', { username, email, password, role }),
 
   getMe: () =>

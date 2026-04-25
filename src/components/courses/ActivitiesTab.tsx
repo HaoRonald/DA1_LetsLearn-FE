@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { FileUp, ListChecks, MoreVertical, Calendar, FileText } from "lucide-react";
+import {
+  FileUp,
+  ListChecks,
+  MoreVertical,
+  Calendar,
+  FileText,
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -19,7 +25,7 @@ interface ActivitiesTabProps {
 }
 
 export function ActivitiesTab({ course }: ActivitiesTabProps) {
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState("All");
   const router = useRouter();
   const { user } = useAuth();
 
@@ -37,8 +43,12 @@ export function ActivitiesTab({ course }: ActivitiesTabProps) {
       (section.topics || [])
         .filter(
           (topic) =>
-              (topic.type?.toLowerCase() === "assignment" || topic.type?.toLowerCase() === "quiz" || topic.type?.toLowerCase() === "page" || topic.type?.toLowerCase() === "file") &&
-            (filter === "all" || topic.type?.toLowerCase() === filter),
+            (topic.type?.toLowerCase() === "assignment" ||
+              topic.type?.toLowerCase() === "quiz" ||
+              topic.type?.toLowerCase() === "page" ||
+              topic.type?.toLowerCase() === "file") &&
+            (filter === "All" ||
+              topic.type?.toLowerCase() === filter.toLowerCase()),
         )
         .map((topic) => ({ ...topic, sectionTitle: section.title })),
     ) || [];
@@ -55,16 +65,16 @@ export function ActivitiesTab({ course }: ActivitiesTabProps) {
             Manage and track your assignments and tests
           </p>
         </div>
-        <Select defaultValue="all" onValueChange={setFilter}>
+        <Select defaultValue="All" onValueChange={setFilter}>
           <SelectTrigger className="w-full sm:w-[200px] h-11 border-[#E5E7EB] text-[#6B7280] rounded-xl bg-white shadow-sm font-bold">
             <SelectValue placeholder="Select topic" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All activities</SelectItem>
-            <SelectItem value="page">Pages</SelectItem>
-            <SelectItem value="file">Files</SelectItem>
-            <SelectItem value="assignment">Assignments</SelectItem>
-            <SelectItem value="quiz">Quizzes</SelectItem>
+            <SelectItem value="All">All activities</SelectItem>
+            <SelectItem value="Page">Pages</SelectItem>
+            <SelectItem value="File">Files</SelectItem>
+            <SelectItem value="Assignment">Assignments</SelectItem>
+            <SelectItem value="Quiz">Quizzes</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -72,8 +82,13 @@ export function ActivitiesTab({ course }: ActivitiesTabProps) {
       <div className="space-y-8 md:space-y-12">
         {course.sections?.map((section) => {
           const sectionActivities = (section.topics || []).filter(
-            (t: any) => (t.type?.toLowerCase() === "assignment" || t.type?.toLowerCase() === "quiz" || t.type?.toLowerCase() === "page" || t.type?.toLowerCase() === "file") &&
-            (filter === "all" || t.type?.toLowerCase() === filter),
+            (t: any) =>
+              (t.type?.toLowerCase() === "assignment" ||
+                t.type?.toLowerCase() === "quiz" ||
+                t.type?.toLowerCase() === "page" ||
+                t.type?.toLowerCase() === "file") &&
+              (filter === "All" ||
+                t.type?.toLowerCase() === filter.toLowerCase()),
           );
 
           if (sectionActivities.length === 0) return null;
@@ -105,17 +120,29 @@ export function ActivitiesTab({ course }: ActivitiesTabProps) {
                       }
                       const type = activity.type?.toLowerCase();
                       if (type === "assignment") {
-                        router.push(`/assignments/${activity.id}?courseId=${course.id}`);
+                        router.push(
+                          `/assignments/${activity.id}?courseId=${course.id}`,
+                        );
                       } else if (type === "quiz") {
-                        router.push(`/quizzes/${activity.id}?courseId=${course.id}`);
+                        router.push(
+                          `/quizzes/${activity.id}?courseId=${course.id}`,
+                        );
                       } else if (type === "page") {
-                        router.push(`/pages/${activity.id}?courseId=${course.id}`);
+                        router.push(
+                          `/pages/${activity.id}?courseId=${course.id}`,
+                        );
                       } else if (type === "file") {
-                        router.push(`/files/${activity.id}?courseId=${course.id}`);
+                        router.push(
+                          `/files/${activity.id}?courseId=${course.id}`,
+                        );
                       } else if (type === "link") {
-                        router.push(`/links/${activity.id}?courseId=${course.id}`);
+                        router.push(
+                          `/links/${activity.id}?courseId=${course.id}`,
+                        );
                       } else if (type === "meeting") {
-                        router.push(`/meetings/${activity.id}?courseId=${course.id}`);
+                        router.push(
+                          `/meetings/${activity.id}?courseId=${course.id}`,
+                        );
                       }
                     }}
                     className="flex flex-col sm:flex-row sm:items-center justify-between p-4 md:p-5 bg-white border border-[#F3F4F6] hover:border-[#3B82F6] rounded-[20px] group cursor-pointer transition-all shadow-sm hover:shadow-md gap-4"
@@ -123,10 +150,14 @@ export function ActivitiesTab({ course }: ActivitiesTabProps) {
                     <div className="flex items-center gap-4 md:gap-5">
                       <div
                         className={`p-2.5 md:p-3 rounded-2xl shrink-0 ${
-                          activity.type?.toLowerCase() === "assignment" ? "bg-purple-50 text-purple-600" : 
-                          activity.type?.toLowerCase() === "page" ? "bg-blue-50 text-blue-600" :
-                          activity.type?.toLowerCase() === "file" ? "bg-orange-50 text-orange-600" :
-                          "bg-pink-50 text-pink-600"}`}
+                          activity.type?.toLowerCase() === "assignment"
+                            ? "bg-purple-50 text-purple-600"
+                            : activity.type?.toLowerCase() === "page"
+                              ? "bg-blue-50 text-blue-600"
+                              : activity.type?.toLowerCase() === "file"
+                                ? "bg-orange-50 text-orange-600"
+                                : "bg-pink-50 text-pink-600"
+                        }`}
                       >
                         {activity.type?.toLowerCase() === "assignment" ? (
                           <FileUp className="w-5 h-5 md:w-6 md:h-6" />
@@ -143,16 +174,9 @@ export function ActivitiesTab({ course }: ActivitiesTabProps) {
                           {activity.title}
                         </h4>
                         <div className="flex items-center gap-2 md:gap-3 mt-1">
-                          <span className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-gray-400">
+                          <span className="text-[10px] md:text-[11px] font-black tracking-widest text-gray-400">
                             {activity.type}
                           </span>
-                          <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                          <div className="flex items-center gap-1.5 text-[11px] md:text-[12px] text-gray-500 font-medium">
-                            <Calendar className="w-3.5 h-3.5" />
-                            <span className="line-clamp-1">
-                              {isEnrolled ? "See details" : "Locked"}
-                            </span>
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -171,10 +195,6 @@ export function ActivitiesTab({ course }: ActivitiesTabProps) {
                             : "Locked"}
                         </span>
                       </div>
-                      <div className="h-8 md:h-10 w-[1px] bg-gray-100 hidden sm:block"></div>
-                      <button className="bg-[#F9FAFB] group-hover:bg-[#3B82F6] text-[#6B7280] group-hover:text-white px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-[13px] md:text-[14px] font-bold transition-all whitespace-nowrap">
-                        {isEnrolled ? "Details" : "Join"}
-                      </button>
                     </div>
                   </div>
                 ))}

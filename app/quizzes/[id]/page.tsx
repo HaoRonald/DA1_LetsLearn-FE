@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { courseApi } from "@/services/courseService";
 import type { QuizTopic, QuizTopicData } from "@/types/quiz";
 
-import { LearnerQuizView } from "@/components/quizzes/LearnerQuizView";
+import { StudentQuizView } from "@/components/quizzes/LearnerQuizView";
 import TeacherQuizView from "@/components/quizzes/TeacherQuizView";
 import TeacherQuizSettings from "@/components/quizzes/TeacherQuizSettings";
 import TeacherQuizQuestions from "@/components/quizzes/TeacherQuizQuestions";
@@ -286,7 +286,7 @@ export default function QuizDetailPage() {
         <div className="px-6 md:px-10 -mt-16 w-full pb-12">
           {!isTeacher && (
             <div className="mt-0">
-              <LearnerQuizView quiz={legacyQuiz} courseId={courseId} />
+              <StudentQuizView quiz={legacyQuiz} courseId={courseId} />
             </div>
           )}
         </div>

@@ -79,6 +79,8 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
     title: "",
     description: "",
   });
+  const [topicTitle, setTopicTitle] = useState("");
+  const [selectedTopicType, setSelectedTopicType] = useState<string | null>(null);
 
   const hasEditPermission =
     user?.role === "Admin" ||
@@ -192,13 +194,15 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
     setIsSaving(true);
     try {
       const res = await topicApi.create(course.id, {
-        title: `New ${type.charAt(0).toUpperCase() + type.slice(1)}`,
+        title: topicTitle.trim() || `New ${type.charAt(0).toUpperCase() + type.slice(1)}`,
         type: type.toLowerCase(),
         sectionId: activeSectionIdForTopic,
       });
 
       const newTopic = res.data;
       setActiveSectionIdForTopic(null);
+      setSelectedTopicType(null);
+      setTopicTitle("");
       if (onUpdate) onUpdate();
 
       // Better UX: Show toast with action instead of forced redirect
@@ -367,7 +371,7 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
               {isEditMode ? "Editing" : "Edit content"}
             </button>
           )}
-          {!isEnrolled && user?.role === "Learner" && (
+          {!isEnrolled && (user?.role === "Student" || user?.role === "Learner") && (
             <div className="flex items-center gap-2 sm:gap-4 shrink-0">
               {isPaidCourse && (
                 <span className="text-[14px] sm:text-[18px] font-bold text-[#F97316] whitespace-nowrap">
@@ -821,7 +825,11 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
                 Add a topic
               </h2>
               <button
-                onClick={() => setActiveSectionIdForTopic(null)}
+                onClick={() => {
+                  setActiveSectionIdForTopic(null);
+                  setSelectedTopicType(null);
+                  setTopicTitle("");
+                }}
                 className="text-red-500 hover:bg-red-50 p-2 rounded-xl transition-all"
               >
                 <X className="w-5 h-5" />
@@ -842,82 +850,136 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
             </div>
 
             <div className="p-6">
-              <div className="grid grid-cols-3 gap-4">
-                {[
-                  {
-                    name: "Assignment",
-                    type: "assignment",
-                    icon: (
-                      <FileUp
-                        className="w-7 h-7 text-[#8B5CF6]"
-                        strokeWidth={1.5}
-                      />
-                    ),
-                  },
-                  {
-                    name: "Quiz",
-                    type: "quiz",
-                    icon: (
-                      <ListChecks
-                        className="w-7 h-7 text-[#EC4899]"
-                        strokeWidth={1.5}
-                      />
-                    ),
-                  },
-                  {
-                    name: "Meeting",
-                    type: "meeting",
-                    icon: (
-                      <Video
-                        className="w-7 h-7 text-[#3B82F6]"
-                        strokeWidth={1.5}
-                      />
-                    ),
-                  },
-                  {
-                    name: "File",
-                    type: "file",
-                    icon: (
-                      <FileText
-                        className="w-7 h-7 text-[#3B82F6]"
-                        strokeWidth={1.5}
-                      />
-                    ),
-                  },
-                  {
-                    name: "Link",
-                    type: "link",
-                    icon: (
-                      <LinkIcon
-                        className="w-7 h-7 text-[#10B981]"
-                        strokeWidth={1.5}
-                      />
-                    ),
-                  },
-                  {
-                    name: "Page",
-                    type: "page",
-                    icon: (
-                      <FileText
-                        className="w-7 h-7 text-[#EC4899]"
-                        strokeWidth={1.5}
-                      />
-                    ),
-                  },
-                ].map((opt) => (
-                  <button
-                    key={opt.name}
-                    disabled={isSaving}
-                    onClick={() => handleCreateTopic(opt.type)}
-                    className="flex flex-col items-center justify-center p-4 h-28 border border-gray-200 hover:border-[#3B82F6] hover:bg-blue-50/30 rounded-2xl transition-all hover:shadow-sm disabled:opacity-50"
-                  >
-                    <div className="mb-2">{opt.icon}</div>
-                    <span className="text-[14px] font-medium text-gray-600">
-                      {opt.name}
+              {!selectedTopicType ? (
+                <>
+                  <div className="flex items-center gap-2 mb-6">
+                    <div className="h-px bg-gray-100 flex-1"></div>
+                    <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-2">
+                      Choose Topic Type
                     </span>
-                  </button>
-                ))}
-              </div>
+                    <div className="h-px bg-gray-100 flex-1"></div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    {[
+                      {
+                        name: "Assignment",
+                        type: "assignment",
+                        icon: (
+                          <FileUp
+                            className="w-7 h-7 text-[#8B5CF6]"
+                            strokeWidth={1.5}
+                          />
+                        ),
+                      },
+                      {
+                        name: "Quiz",
+                        type: "quiz",
+                        icon: (
+                          <ListChecks
+                            className="w-7 h-7 text-[#EC4899]"
+                            strokeWidth={1.5}
+                          />
+                        ),
+                      },
+                      {
+                        name: "Meeting",
+                        type: "meeting",
+                        icon: (
+                          <Video
+                            className="w-7 h-7 text-[#3B82F6]"
+                            strokeWidth={1.5}
+                          />
+                        ),
+                      },
+                      {
+                        name: "File",
+                        type: "file",
+                        icon: (
+                          <FileText
+                            className="w-7 h-7 text-[#3B82F6]"
+                            strokeWidth={1.5}
+                          />
+                        ),
+                      },
+                      {
+                        name: "Link",
+                        type: "link",
+                        icon: (
+                          <LinkIcon
+                            className="w-7 h-7 text-[#10B981]"
+                            strokeWidth={1.5}
+                          />
+                        ),
+                      },
+                      {
+                        name: "Page",
+                        type: "page",
+                        icon: (
+                          <FileText
+                            className="w-7 h-7 text-[#EC4899]"
+                            strokeWidth={1.5}
+                          />
+                        ),
+                      },
+                    ].map((opt) => (
+                      <button
+                        key={opt.name}
+                        disabled={isSaving}
+                        onClick={() => setSelectedTopicType(opt.type)}
+                        className="flex flex-col items-center justify-center p-4 h-28 border border-gray-200 hover:border-[#3B82F6] hover:bg-blue-50/30 rounded-2xl transition-all hover:shadow-sm disabled:opacity-50"
+                      >
+                        <div className="mb-2">{opt.icon}</div>
+                        <span className="text-[14px] font-medium text-gray-600">
+                          {opt.name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-bold text-gray-500 uppercase tracking-wider ml-1">
+                      Give your {selectedTopicType} a name
+                    </label>
+                    <input
+                      autoFocus
+                      type="text"
+                      placeholder={`Enter ${selectedTopicType} title...`}
+                      value={topicTitle}
+                      onChange={(e) => setTopicTitle(e.target.value)}
+                      className="w-full border border-gray-200 rounded-2xl px-5 py-4 text-[16px] font-medium focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && topicTitle.trim()) {
+                          handleCreateTopic(selectedTopicType);
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setSelectedTopicType(null)}
+                      className="flex-1 py-3.5 border border-gray-200 text-gray-600 font-bold rounded-2xl hover:bg-gray-50 transition-all"
+                    >
+                      Back
+                    </button>
+                    <button
+                      disabled={isSaving || !topicTitle.trim()}
+                      onClick={() => handleCreateTopic(selectedTopicType)}
+                      className="flex-[2] py-3.5 bg-blue-500 text-white font-bold rounded-2xl hover:bg-blue-600 shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        "Create Topic"
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

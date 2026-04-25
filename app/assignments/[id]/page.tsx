@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { courseApi, TopicResponse } from "@/services/courseService";
 
-import { LearnerAssignmentView } from "@/components/assignments/LearnerAssignmentView";
+import { StudentAssignmentView } from "@/components/assignments/LearnerAssignmentView";
 import { TeacherAssignmentView } from "@/components/assignments/TeacherAssignmentView";
 import { TeacherAssignmentSettings } from "@/components/assignments/TeacherAssignmentSettings";
 import { TeacherAssignmentSubmissions } from "@/components/assignments/TeacherAssignmentSubmissions";
@@ -207,7 +207,7 @@ export default function AssignmentDetailPage() {
                 className="mt-0 outline-none w-full"
                 forceMount
               >
-                <LearnerAssignmentView assignment={assignment} courseId={courseId!} />
+                <StudentAssignmentView assignment={assignment} courseId={courseId!} />
               </TabsContent>
             ) : (
               <>

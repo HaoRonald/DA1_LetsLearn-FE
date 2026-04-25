@@ -85,7 +85,6 @@ export default function PageTopicPage() {
       });
       setTopic(prev => prev ? { ...prev, title: name, data: updatedData } : null);
       toast.success('Topic updated successfully!');
-      setActiveTab('page');
     } catch (err) {
       toast.error('Failed to save settings');
     } finally {
@@ -225,13 +224,13 @@ export default function PageTopicPage() {
                       </div>
                     </div>
 
-                    <div className="flex justify-center">
+                    <div className="flex justify-center mt-8 pt-4 border-t border-gray-100">
                       <button 
                          onClick={handleSave} 
                          disabled={isSaving}
-                         className="px-8 py-2.5 bg-[#8AB4F8] hover:bg-blue-400 text-white font-bold rounded-lg transition-colors flex items-center justify-center min-w-[100px]"
+                         className="px-10 py-3 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-xl transition-all shadow-lg shadow-purple-200 flex items-center justify-center min-w-[120px] hover:scale-[1.02] active:scale-[0.98]"
                       >
-                         {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save'}
+                         {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save Settings'}
                       </button>
                     </div>
 

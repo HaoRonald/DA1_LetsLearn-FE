@@ -143,7 +143,6 @@ export default function MeetingTopicPage() {
       });
 
       toast.success('Topic updated successfully!');
-      setActiveTab('detail');
     } catch (err) {
       console.error('Failed to save meeting settings:', err);
       toast.error('Failed to save settings');
@@ -227,93 +226,92 @@ export default function MeetingTopicPage() {
   return (
     <MainLayout headerTitle={breadcrumbs}>
       <div className="flex flex-col min-h-screen bg-[#F8FAFC]">
-        {/* Modern Header Section */}
-        <div className="w-full bg-[#1E293B] pt-12 pb-24 px-6 md:px-12 relative overflow-hidden">
-          {/* Abstract background elements */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/10 rounded-full -ml-48 -mb-48 blur-3xl"></div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          {/* Blue Gradient Header matching other topics */}
+          <div className="w-full bg-gradient-to-r from-blue-600 to-blue-800 pt-10 pb-20 px-6 md:px-12 relative overflow-hidden">
+            {/* Subtle background elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/5 rounded-full -ml-48 -mb-48 blur-3xl"></div>
 
-          <div className="max-w-7xl mx-auto relative z-10">
-            <div className="flex flex-col gap-8 text-white">
-              <button 
-                onClick={() => router.push(`/courses/${courseId}`)}
-                className="flex items-center gap-2 w-fit px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-sm font-bold border border-white/10 group"
-              >
-                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                Back to course
-              </button>
-              
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div className="flex items-center gap-6">
-                  <div className="w-16 h-16 rounded-2xl bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/20 ring-4 ring-blue-500/10">
-                    <Video className="w-8 h-8 text-white" strokeWidth={2} />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <h1 className="text-[32px] md:text-[42px] font-black tracking-tight leading-none">{topic.title}</h1>
-                    <div className="flex items-center gap-4 text-white/60 text-sm font-medium mt-2">
-                      <span className="flex items-center gap-1.5 bg-white/5 px-3 py-1 rounded-full border border-white/10">
-                        <CalendarIcon className="w-4 h-4" />
-                        {meetingData?.open ? format(new Date(meetingData.open), 'MMM dd, yyyy') : 'No date set'}
-                      </span>
-                      <span className="flex items-center gap-1.5 bg-white/5 px-3 py-1 rounded-full border border-white/10">
-                        <Users className="w-4 h-4" />
-                        {histories.length} sessions
-                      </span>
+            <div className="max-w-7xl mx-auto relative z-10">
+              <div className="flex flex-col gap-8 text-white">
+                <button 
+                  onClick={() => router.push(`/courses/${courseId}`)}
+                  className="flex items-center gap-2 w-fit px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-xl transition-all text-sm font-bold border border-white/10 group"
+                >
+                  <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                  Back to course
+                </button>
+                
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+                  <div className="flex items-center gap-6">
+                    <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-lg ring-4 ring-white/10">
+                      <Video className="w-7 h-7 text-white" strokeWidth={2.5} />
                     </div>
+                    <div className="flex flex-col gap-0.5">
+                      <h1 className="text-[32px] md:text-[40px] font-black tracking-tight leading-none">{topic.title}</h1>
+                      <div className="flex items-center gap-3 text-white/70 text-[13px] font-bold mt-2 uppercase tracking-wider">
+                         <span className="flex items-center gap-1.5">
+                            <CalendarIcon className="w-4 h-4" />
+                            {meetingData?.open ? format(new Date(meetingData.open), 'MMM dd, yyyy') : 'No date set'}
+                         </span>
+                         <span className="w-1 h-1 bg-white/30 rounded-full"></span>
+                         <span className="flex items-center gap-1.5">
+                            <Users className="w-4 h-4" />
+                            {histories.length} sessions
+                         </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                     <button 
+                      onClick={handleJoin}
+                      disabled={isJoining}
+                      className="flex items-center gap-2 bg-white text-blue-600 hover:bg-blue-50 disabled:bg-blue-100 font-black px-8 py-3.5 rounded-2xl shadow-xl shadow-black/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      {isJoining ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <Play className="w-5 h-5 fill-current" />
+                      )}
+                      {isJoining ? 'Joining...' : 'Enter Meeting Room'}
+                    </button>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                   <button 
-                    onClick={handleJoin}
-                    disabled={isJoining}
-                    className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-800 text-white font-black px-8 py-4 rounded-2xl shadow-xl shadow-blue-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    {isJoining ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Play className="w-5 h-5 fill-current" />
+                <div className="border-b-[1.5px] border-white/20 w-full">
+                  <TabsList className="bg-transparent p-0 flex justify-start gap-8 w-full h-auto">
+                    <TabsTrigger
+                      value="detail"
+                      className="flex-none px-1 py-3 text-[15px] font-medium text-white/70 hover:text-white transition-all !bg-transparent !shadow-none data-[state=active]:relative data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:h-[3.5px] data-[state=active]:after:bg-white data-[state=active]:font-black data-[state=active]:text-white"
+                    >
+                      Details
+                    </TabsTrigger>
+                    {isTeacher && (
+                      <TabsTrigger
+                        value="settings"
+                        className="flex-none px-1 py-3 text-[15px] font-medium text-white/70 hover:text-white transition-all !bg-transparent !shadow-none data-[state=active]:relative data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:h-[3.5px] data-[state=active]:after:bg-white data-[state=active]:font-black data-[state=active]:text-white"
+                      >
+                        Settings
+                      </TabsTrigger>
                     )}
-                    {isJoining ? 'Joining...' : 'Enter Meeting Room'}
-                  </button>
+                    {isTeacher && (
+                      <TabsTrigger
+                        value="history"
+                        className="flex-none px-1 py-3 text-[15px] font-medium text-white/70 hover:text-white transition-all !bg-transparent !shadow-none data-[state=active]:relative data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:h-[3.5px] data-[state=active]:after:bg-white data-[state=active]:font-black data-[state=active]:text-white"
+                      >
+                        History
+                      </TabsTrigger>
+                    )}
+                  </TabsList>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Content Section with Tabs */}
-        <div className="max-w-7xl mx-auto w-full px-6 md:px-12 -mt-12 pb-24 relative z-20">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="bg-white rounded-3xl p-2 shadow-xl shadow-slate-200/50 mb-8 inline-flex border border-slate-100">
-              <TabsList className="bg-transparent h-auto p-0 flex gap-1">
-                <TabsTrigger
-                  value="detail"
-                  className="flex items-center gap-2 px-6 py-3 text-[14px] font-bold text-slate-500 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-600 rounded-2xl transition-all"
-                >
-                  <Info className="w-4 h-4" />
-                  Details
-                </TabsTrigger>
-                {isTeacher && (
-                  <TabsTrigger
-                    value="settings"
-                    className="flex items-center gap-2 px-6 py-3 text-[14px] font-bold text-slate-500 data-[state=active]:bg-orange-50 data-[state=active]:text-orange-600 rounded-2xl transition-all"
-                  >
-                    <SettingsIcon className="w-4 h-4" />
-                    Settings
-                  </TabsTrigger>
-                )}
-                {isTeacher && (
-                  <TabsTrigger
-                    value="history"
-                    className="flex items-center gap-2 px-6 py-3 text-[14px] font-bold text-slate-500 data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-600 rounded-2xl transition-all"
-                  >
-                    <HistoryIcon className="w-4 h-4" />
-                    History
-                  </TabsTrigger>
-                )}
-              </TabsList>
-            </div>
+          {/* Content Section */}
+          <div className="max-w-7xl mx-auto w-full px-6 md:px-12 mt-12 pb-24 relative z-20">
 
             <div className="mt-0">
               <TabsContent value="detail" className="mt-0 outline-none space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -518,14 +516,14 @@ export default function MeetingTopicPage() {
                       </div>
                     </div>
 
-                    <div className="flex justify-end pt-4">
+                    <div className="flex justify-center mt-10 pt-6 border-t border-slate-100">
                       <button 
-                        onClick={handleSave} 
-                        disabled={isSaving}
-                        className="bg-orange-500 hover:bg-orange-600 text-white font-black px-12 py-4 rounded-[20px] shadow-xl shadow-orange-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-3 disabled:opacity-50"
+                         onClick={handleSave} 
+                         disabled={isSaving}
+                         className="px-12 py-4 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-[20px] transition-all shadow-xl shadow-blue-500/20 flex items-center justify-center min-w-[160px] hover:scale-[1.02] active:scale-[0.98] gap-3"
                       >
-                        {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckIcon className="w-5 h-5" />}
-                        Save Settings
+                         {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckIcon className="w-5 h-5" />}
+                         Save Settings
                       </button>
                     </div>
                   </div>
@@ -600,8 +598,8 @@ export default function MeetingTopicPage() {
                 </TabsContent>
               )}
             </div>
-          </Tabs>
-        </div>
+          </div>
+        </Tabs>
       </div>
     </MainLayout>
   );
