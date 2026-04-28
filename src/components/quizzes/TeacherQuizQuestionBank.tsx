@@ -278,8 +278,9 @@ export function TeacherQuizQuestionBank({
       await deleteBankQuestion(id);
       setQuestions((prev) => prev.filter((q) => q.id !== id));
       toast.success("Question deleted");
-    } catch {
-      toast.error("Failed to delete question");
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.response?.data || "Failed to delete question";
+      toast.error(msg);
     }
   };
 

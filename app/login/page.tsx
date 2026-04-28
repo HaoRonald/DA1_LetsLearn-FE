@@ -2,14 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
-  const router = useRouter();
   const { login } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -24,38 +22,39 @@ export default function LoginPage() {
     setError("");
     try {
       const user = await login(email, password);
-      console.log('DEBUG: Full user object from login:', user);
-
-      // Normalize role (handle all possible cases)
-      const rawUser = user as any;
+      const rawUser = user as { role?: string; Role?: string };
       const role = rawUser.role || rawUser.Role || "Learner";
-      
-      console.log('DEBUG: Normalized role:', role);
 
       let targetPath = "/";
       if (role === "Admin") {
         targetPath = "/admin";
       }
-      
-      console.log(`DEBUG: Final Target Path: ${targetPath}`);
-      
-      // Force redirect
-      if (typeof window !== "undefined") {
-        console.log("DEBUG: Executing window.location.href...");
-        window.location.href = targetPath;
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Invalid email or password");
+
+      window.location.href = targetPath;
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message || "Invalid email or password");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 font-sans">
-      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+    <div
+      className="flex min-h-screen items-center justify-center p-4 font-sans relative overflow-hidden"
+      style={{
+        backgroundImage: "url(/bg.png)",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"></div>
+
+      <div className="w-full max-w-md bg-white/95 p-8 rounded-xl shadow-2xl border border-gray-100 relative z-10 backdrop-blur-md">
         <div className="mb-8">
-          <p className="text-sm font-bold tracking-wider text-black mb-2 uppercase">
+          <p className="text-sm font-bold tracking-wider text-[#3B82F6] mb-2 uppercase">
             Let&apos;s learn
           </p>
           <h1 className="text-2xl font-bold text-black mb-1">Welcome back!</h1>
@@ -70,7 +69,7 @@ export default function LoginPage() {
             <Input
               type="email"
               placeholder="Email"
-              className="pl-10 h-[44px] text-[14px] border-[#9CA3AF]/30 focus-visible:ring-[#3B82F6]"
+              className="pl-10 h-[44px] text-[14px] border-[#9CA3AF]/30 focus-visible:ring-[#3B82F6] bg-white"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -82,7 +81,7 @@ export default function LoginPage() {
             <Input
               type={showPassword ? "text" : "password"}
               placeholder="Password"
-              className="pl-10 pr-10 h-[44px] text-[14px] border-[#9CA3AF]/30 focus-visible:ring-[#3B82F6]"
+              className="pl-10 pr-10 h-[44px] text-[14px] border-[#9CA3AF]/30 focus-visible:ring-[#3B82F6] bg-white"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -104,7 +103,7 @@ export default function LoginPage() {
 
           <Button
             type="submit"
-            className="w-full bg-[#3B82F6] hover:bg-[#3B82F6]/90 text-white h-[44px] font-bold text-[16px] rounded-md mt-6"
+            className="w-full bg-[#3B82F6] hover:bg-[#3B82F6]/90 text-white h-[44px] font-bold text-[16px] rounded-md mt-6 shadow-lg shadow-blue-500/30 transition-all"
             disabled={loading}
           >
             {loading ? "Logging in..." : "LOG IN"}

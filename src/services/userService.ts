@@ -6,6 +6,7 @@ export interface UserWorkTopic {
   type: string;
   sectionId: string;
   data: any;
+  response?: any;
   course?: {
     id: string;
     title: string;

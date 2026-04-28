@@ -7,11 +7,11 @@ import { courseApi, TopicResponse } from '@/services/courseService';
 import { topicApi, SaveMeetingHistoryRequest } from '@/services/topicService';
 import { commentApi, GetCommentResponse } from '@/services/commentService';
 import MainLayout from '@/components/layout/MainLayout';
-import { 
-  Loader2, Video, ChevronRight, Clock, AlignLeft, 
-  Send, MoreVertical, Reply, Calendar as CalendarIcon, 
+import {
+  Loader2, Video, ChevronRight, Clock, AlignLeft,
+  Send, MoreVertical, Reply, Calendar as CalendarIcon,
   ArrowLeft, Users, Download, Play, Settings as SettingsIcon,
-  History as HistoryIcon, Info
+  History as HistoryIcon, Info, Mail, Link as LinkIcon
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
@@ -29,6 +29,7 @@ interface MeetingData {
   description?: string;
   open?: string;
   close?: string;
+  meetingLink?: string;
   histories?: MeetingHistory[];
 }
 
@@ -44,6 +45,7 @@ export default function MeetingTopicPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
+  const [isSendingNotification, setIsSendingNotification] = useState(false);
   const [activeTab, setActiveTab] = useState(initialTab);
   
   // Comments state
@@ -56,6 +58,7 @@ export default function MeetingTopicPage() {
   const [openDate, setOpenDate] = useState('');
   const [closeDate, setCloseDate] = useState('');
   const [description, setDescription] = useState('');
+  const [meetingLink, setMeetingLink] = useState('');
 
   const isTeacher = user?.role === 'Teacher' || user?.role === 'Admin';
 
@@ -88,6 +91,7 @@ export default function MeetingTopicPage() {
         setDescription(meetingData.description || '');
         setOpenDate(meetingData.open ? new Date(meetingData.open).toISOString().slice(0, 16) : '');
         setCloseDate(meetingData.close ? new Date(meetingData.close).toISOString().slice(0, 16) : '');
+        setMeetingLink(meetingData.meetingLink || '');
       }
     } catch (err) {
       console.error('Failed to fetch meeting topic:', err);
@@ -133,6 +137,7 @@ export default function MeetingTopicPage() {
         description,
         open: openDate ? new Date(openDate).toISOString() : null,
         close: closeDate ? new Date(closeDate).toISOString() : null,
+        meetingLink: meetingLink?.trim() || null,
       };
 
       await topicApi.update(courseId, topicId, {
@@ -142,12 +147,31 @@ export default function MeetingTopicPage() {
         data: updatedData
       });
 
-      toast.success('Topic updated successfully!');
+      toast.success('Meeting settings saved!');
     } catch (err) {
       console.error('Failed to save meeting settings:', err);
       toast.error('Failed to save settings');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // ── Send Email Notification ───────────────────────────────────────
+  const handleSendNotification = async () => {
+    if (!courseId || !topicId) return;
+    setIsSendingNotification(true);
+    try {
+      const res = await topicApi.notifyStudents(courseId, topicId);
+      const count = res.data?.count ?? 0;
+      toast.success(
+        count > 0
+          ? `Notification sent to ${count} student${count > 1 ? 's' : ''}!`
+          : 'Notification sent! (No enrolled students)',
+      );
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to send notification');
+    } finally {
+      setIsSendingNotification(false);
     }
   };
 
@@ -498,7 +522,7 @@ export default function MeetingTopicPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-2 mb-10">
+                    <div className="space-y-2 mb-8">
                       <label className="text-sm font-bold text-slate-500 ml-1">Description & Instructions</label>
                       <div className="border border-slate-200 rounded-[24px] overflow-hidden focus-within:border-orange-500 focus-within:ring-4 focus-within:ring-orange-500/5 transition-all">
                          <div className="bg-slate-50 border-b border-slate-200 px-6 py-3 flex items-center gap-6 text-slate-400">
@@ -516,14 +540,37 @@ export default function MeetingTopicPage() {
                       </div>
                     </div>
 
-                    <div className="flex justify-center mt-10 pt-6 border-t border-slate-100">
-                      <button 
-                         onClick={handleSave} 
-                         disabled={isSaving}
-                         className="px-12 py-4 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-[20px] transition-all shadow-xl shadow-blue-500/20 flex items-center justify-center min-w-[160px] hover:scale-[1.02] active:scale-[0.98] gap-3"
+                    <div className="space-y-2 mb-10">
+                      <label className="text-sm font-bold text-slate-500 ml-1">Meeting Link</label>
+                      <div className="relative group">
+                        <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
+                        <input
+                          type="url"
+                          value={meetingLink}
+                          onChange={e => setMeetingLink(e.target.value)}
+                          placeholder="https://meet.google.com/abc-defg-hij"
+                          className="w-full border border-slate-200 rounded-[20px] pl-12 pr-4 py-4 text-[15px] font-medium focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/5 transition-all"
+                        />
+                      </div>
+                      <p className="text-xs text-slate-400 ml-1">Paste Google Meet, Zoom, or Microsoft Teams link here. This will be included in email notifications.</p>
+                    </div>
+
+                    <div className="flex justify-center gap-4 mt-10 pt-6 border-t border-slate-100">
+                      <button
+                        onClick={handleSendNotification}
+                        disabled={isSendingNotification}
+                        className="px-6 py-4 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-[20px] transition-all shadow-xl shadow-blue-500/20 flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
                       >
-                         {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckIcon className="w-5 h-5" />}
-                         Save Settings
+                        {isSendingNotification ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mail className="w-5 h-5" />}
+                        {isSendingNotification ? 'Sending...' : 'Send Email Notification'}
+                      </button>
+                      <button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="px-12 py-4 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-[20px] transition-all shadow-xl shadow-blue-500/20 flex items-center justify-center min-w-[160px] hover:scale-[1.02] active:scale-[0.98] gap-3"
+                      >
+                        {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckIcon className="w-5 h-5" />}
+                        Save Settings
                       </button>
                     </div>
                   </div>

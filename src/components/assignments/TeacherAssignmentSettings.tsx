@@ -2,7 +2,7 @@ import { TopicResponse } from '@/services/courseService';
 import { useRef, useState } from 'react';
 import { topicApi } from '@/services/topicService';
 import { toast } from 'sonner';
-import { UploadCloud, Paperclip, Loader2 } from 'lucide-react';
+import { UploadCloud, Paperclip, Loader2, Mail } from 'lucide-react';
 
 import { useRouter } from 'next/navigation';
 
@@ -19,8 +19,28 @@ export function TeacherAssignmentSettings({ assignment, courseId, onUpdate, onTa
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSendingNotification, setIsSendingNotification] = useState(false);
 
-  // Form State
+  // ── Send Email Notification ───────────────────────────────────────
+  const handleSendNotification = async () => {
+    setIsSendingNotification(true);
+    try {
+      const res = await topicApi.notifyStudents(courseId, assignment.id);
+      const count = res.data?.count ?? 0;
+      toast.success(
+        count > 0
+          ? `Notification sent to ${count} student${count > 1 ? 's' : ''}!`
+          : 'Notification sent! (No enrolled students)',
+      );
+    } catch (err: any) {
+      console.error('Send notification error:', err);
+      toast.error(err.response?.data?.message || 'Failed to send notification');
+    } finally {
+      setIsSendingNotification(false);
+    }
+  };
+
+  // ── Save Settings ────────────────────────────────────────────────
   const [form, setForm] = useState({
     title: assignment.title || "",
     description: assignmentData.description || "",
@@ -296,8 +316,16 @@ export function TeacherAssignmentSettings({ assignment, courseId, onUpdate, onTa
         </div>
       </div>
 
-      <div className="flex justify-center pt-8 border-t border-gray-100 mt-8">
-        <button 
+      <div className="flex justify-center gap-4 pt-8 border-t border-gray-100 mt-8">
+        <button
+          onClick={handleSendNotification}
+          disabled={isSendingNotification}
+          className="bg-blue-500 hover:bg-blue-600 text-white font-black px-6 py-3 rounded-xl shadow-md shadow-blue-100 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {isSendingNotification ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+          {isSendingNotification ? 'Sending...' : 'Send Email Notification'}
+        </button>
+        <button
           onClick={handleSave}
           disabled={isSaving}
           className="bg-purple-600 hover:bg-purple-700 text-white font-black px-10 py-3 rounded-xl shadow-lg shadow-purple-200 transition-all hover:scale-[1.02] active:scale-[0.98] min-w-[140px] flex items-center justify-center gap-2"

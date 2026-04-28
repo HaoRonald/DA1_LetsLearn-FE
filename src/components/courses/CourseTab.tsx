@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Copy,
   FileText,
@@ -22,6 +22,9 @@ import {
   Loader2,
   Globe,
   Paperclip,
+  Upload,
+  UploadCloud,
+  Mail,
 } from "lucide-react";
 import {
   Accordion,
@@ -40,6 +43,7 @@ import { toast } from "sonner";
 import { sectionApi } from "@/services/sectionService";
 import { topicApi } from "@/services/topicService";
 import { paymentApi } from "@/services/paymentService";
+import { mediaApi } from "@/services/mediaService";
 
 interface CourseTabProps {
   course: CourseResponse;
@@ -60,6 +64,16 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showNotifyModal, setShowNotifyModal] = useState<{
+    show: boolean;
+    topicId: string;
+    courseId: string;
+    topicType: string;
+    path: string;
+  } | null>(null);
+  const [isNotifying, setIsNotifying] = useState(false);
 
   const isPaidCourse = course.price && course.price > 0;
 
@@ -81,6 +95,7 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
   });
   const [topicTitle, setTopicTitle] = useState("");
   const [selectedTopicType, setSelectedTopicType] = useState<string | null>(null);
+  const [sendEmailNotification, setSendEmailNotification] = useState(true);
 
   const hasEditPermission =
     user?.role === "Admin" ||
@@ -166,6 +181,23 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
     }
   };
 
+  const handleUploadBanner = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const res = await mediaApi.upload(file);
+      setCourseForm((prev) => ({ ...prev, imageUrl: res.data.displayUrl }));
+      toast.success("Banner uploaded successfully!");
+    } catch (err: any) {
+      toast.error("Failed to upload banner");
+      console.error(err);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleSaveSection = async () => {
     if (!sectionForm.title.trim()) {
       toast.error("Section title is required");
@@ -200,13 +232,7 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
       });
 
       const newTopic = res.data;
-      setActiveSectionIdForTopic(null);
-      setSelectedTopicType(null);
-      setTopicTitle("");
-      if (onUpdate) onUpdate();
-
-      // Better UX: Show toast with action instead of forced redirect
-      const topicType = newTopic.type?.toLowerCase();
+      const topicType = newTopic.type?.toLowerCase() || '';
       let path = "";
       if (topicType === "assignment") path = `/assignments/${newTopic.id}`;
       else if (topicType === "quiz") path = `/quizzes/${newTopic.id}`;
@@ -215,10 +241,21 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
       else if (topicType === "link") path = `/links/${newTopic.id}`;
       else if (topicType === "meeting") path = `/meetings/${newTopic.id}`;
 
+      const emailTypes = ['assignment', 'quiz', 'meeting'];
+      if (sendEmailNotification && emailTypes.includes(topicType)) {
+        try {
+          await topicApi.notifyStudents(course.id, newTopic.id);
+        } catch {
+          // Email fail silently, don't block topic creation
+        }
+      }
+
       toast.success(
         `${type.charAt(0).toUpperCase() + type.slice(1)} created!`,
         {
-          description: "You can continue adding more or edit this one.",
+          description: sendEmailNotification && emailTypes.includes(topicType)
+            ? "Topic created and email sent to students."
+            : "You can continue adding more or edit this one.",
           action: path
             ? {
                 label: "Edit now",
@@ -228,13 +265,55 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
             : undefined,
         },
       );
+
+      setActiveSectionIdForTopic(null);
+      setSelectedTopicType(null);
+      setTopicTitle("");
+      setSendEmailNotification(true);
+      if (onUpdate) onUpdate();
     } catch (err: any) {
       console.error(err);
       toast.error(err.response?.data?.message || "Failed to create topic");
-      setActiveSectionIdForTopic(null);
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const showTopicCreatedToast = (type: string, path: string) => {
+    toast.success(
+      `${type.charAt(0).toUpperCase() + type.slice(1)} created!`,
+      {
+        description: "You can continue adding more or edit this one.",
+        action: path
+          ? {
+              label: "Edit now",
+              onClick: () =>
+                router.push(`${path}?courseId=${course.id}&tab=settings`),
+            }
+          : undefined,
+      },
+    );
+  };
+
+  const handleNotifyStudents = async () => {
+    if (!showNotifyModal) return;
+    setIsNotifying(true);
+    try {
+      await topicApi.notifyStudents(showNotifyModal.courseId, showNotifyModal.topicId);
+      toast.success("Notification sent successfully!");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to send notification");
+    } finally {
+      setIsNotifying(false);
+      showTopicCreatedToast(showNotifyModal.topicType, showNotifyModal.path);
+      setShowNotifyModal(null);
+    }
+  };
+
+  const handleSkipNotify = () => {
+    if (!showNotifyModal) return;
+    showTopicCreatedToast(showNotifyModal.topicType, showNotifyModal.path);
+    setShowNotifyModal(null);
   };
 
   const getIcon = (type: string) => {
@@ -636,19 +715,101 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-[14px] font-bold text-[#374151]">
-                  Banner Image URL
+              <div className="space-y-3">
+                <label className="text-[14px] font-bold text-[#374151] ml-1 flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-blue-500" />
+                  Course Banner
                 </label>
-                <input
-                  type="text"
-                  value={courseForm.imageUrl}
-                  onChange={(e) =>
-                    setCourseForm({ ...courseForm, imageUrl: e.target.value })
-                  }
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-[14px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
+                
+                <div className="flex flex-col gap-4">
+                  {courseForm.imageUrl ? (
+                    <div className="relative w-full aspect-[21/9] rounded-[24px] overflow-hidden border border-[#E5E7EB] shadow-sm group">
+                      <img
+                        src={courseForm.imageUrl}
+                        alt="Banner Preview"
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://placehold.co/1200x400?text=Invalid+Image+URL';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-[2px]">
+                         <button
+                           type="button"
+                           onClick={() => fileInputRef.current?.click()}
+                           className="px-5 py-2.5 bg-white text-blue-600 rounded-xl font-bold text-sm hover:bg-blue-50 transition-all flex items-center gap-2"
+                         >
+                           <Upload className="w-4 h-4" /> Change Image
+                         </button>
+                         <button
+                           type="button"
+                           onClick={() => setCourseForm({ ...courseForm, imageUrl: "" })}
+                           className="px-5 py-2.5 bg-red-500 text-white rounded-xl font-bold text-sm hover:bg-red-600 transition-all flex items-center gap-2"
+                         >
+                           <Trash2 className="w-4 h-4" /> Remove
+                         </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full border-2 border-dashed border-[#E5E7EB] rounded-[24px] flex flex-col items-center justify-center py-14 bg-[#FAFAFA] hover:bg-blue-50/50 hover:border-blue-300 transition-all cursor-pointer group relative overflow-hidden"
+                    >
+                      {/* Decorative elements */}
+                      <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-100/30 rounded-full blur-3xl group-hover:bg-blue-200/50 transition-colors" />
+                      <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-purple-100/30 rounded-full blur-3xl group-hover:bg-purple-200/50 transition-colors" />
+
+                      <div className="relative p-5 bg-white rounded-2xl shadow-sm mb-5 group-hover:scale-110 transition-transform duration-500 border border-gray-100">
+                        {isUploading ? (
+                          <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+                        ) : (
+                          <UploadCloud className="w-10 h-10 text-blue-500" />
+                        )}
+                      </div>
+                      
+                      <p className="relative text-[18px] font-black text-[#1F2937] mb-1">Click to upload banner</p>
+                      <p className="relative text-[14px] text-gray-400 font-medium mb-8">Optimal size: 1200 x 400 pixels</p>
+                      
+                      <div className="relative flex items-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-2xl font-bold text-[14px] shadow-lg shadow-blue-200 active:scale-95 transition-all">
+                        <Plus className="w-4 h-4" />
+                        Select Image
+                      </div>
+                    </div>
+                  )}
+
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleUploadBanner}
+                    accept="image/*"
+                    className="hidden"
+                  />
+
+                  {/* Fallback URL input (Collapsed) */}
+                  <div className="mt-2">
+                    <button 
+                      type="button"
+                      onClick={(e) => {
+                        const target = (e.currentTarget.nextElementSibling as HTMLElement);
+                        target.classList.toggle('hidden');
+                      }}
+                      className="text-[12px] font-bold text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-1 ml-1"
+                    >
+                      <Globe className="w-3 h-3" /> Or use an external URL
+                    </button>
+                    <div className="hidden mt-3 animate-in slide-in-from-top-2 duration-200">
+                      <div className="relative">
+                        <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          type="text"
+                          value={courseForm.imageUrl}
+                          onChange={(e) => setCourseForm({ ...courseForm, imageUrl: e.target.value })}
+                          placeholder="Paste image URL here..."
+                          className="w-full h-12 bg-gray-50 border border-gray-200 rounded-xl pl-12 pr-4 text-[14px] focus:outline-none focus:border-blue-500 focus:bg-white transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="text-[14px] font-bold text-[#374151]">
@@ -829,6 +990,7 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
                   setActiveSectionIdForTopic(null);
                   setSelectedTopicType(null);
                   setTopicTitle("");
+                  setSendEmailNotification(true);
                 }}
                 className="text-red-500 hover:bg-red-50 p-2 rounded-xl transition-all"
               >
@@ -937,7 +1099,7 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
                   </div>
                 </>
               ) : (
-                <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+                  <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
                   <div className="space-y-2">
                     <label className="text-[13px] font-bold text-gray-500 uppercase tracking-wider ml-1">
                       Give your {selectedTopicType} a name
@@ -956,6 +1118,28 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
                       }}
                     />
                   </div>
+
+                  {/* Email notification toggle */}
+                  {['assignment', 'quiz', 'meeting'].includes(selectedTopicType) && (
+                    <label className="flex items-center gap-3 p-3 bg-blue-50/50 border border-blue-100 rounded-2xl cursor-pointer hover:bg-blue-50 transition-colors select-none">
+                      <input
+                        type="checkbox"
+                        checked={sendEmailNotification}
+                        onChange={(e) => setSendEmailNotification(e.target.checked)}
+                        className="w-5 h-5 accent-blue-500 rounded cursor-pointer"
+                      />
+                      <Mail className="w-4 h-4 text-blue-500" />
+                      <div className="flex flex-col">
+                        <span className="text-[13px] font-bold text-gray-700">
+                          Send email notification
+                        </span>
+                        <span className="text-[11px] text-gray-400">
+                          Notify all enrolled students about this topic
+                        </span>
+                      </div>
+                    </label>
+                  )}
+
                   <div className="flex gap-3">
                     <button
                       onClick={() => setSelectedTopicType(null)}
@@ -1117,6 +1301,43 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
                 transactions are encrypted and secured by VNPay.
               </p>
             </div>
+          </div>
+        </div>
+      )}
+      
+      {showNotifyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-[24px] w-full max-w-[450px] shadow-2xl animate-in fade-in zoom-in-95 duration-200 overflow-hidden text-center p-8">
+             <div className="w-16 h-16 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+               <span className="text-2xl">📧</span>
+             </div>
+             <h2 className="text-[20px] font-bold text-gray-900 mb-2">Send Notification?</h2>
+             <p className="text-gray-500 text-[15px] mb-8">
+               Do you want to notify all enrolled students about this new {showNotifyModal.topicType}?
+             </p>
+             <div className="flex gap-3 justify-center">
+               <button
+                 onClick={handleSkipNotify}
+                 disabled={isNotifying}
+                 className="px-6 py-3 border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50"
+               >
+                 No, thanks
+               </button>
+               <button
+                 onClick={handleNotifyStudents}
+                 disabled={isNotifying}
+                 className="px-6 py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+               >
+                 {isNotifying ? (
+                   <>
+                     <Loader2 className="w-4 h-4 animate-spin" />
+                     Sending...
+                   </>
+                 ) : (
+                   "Yes, send email"
+                 )}
+               </button>
+             </div>
           </div>
         </div>
       )}

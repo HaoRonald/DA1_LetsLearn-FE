@@ -4,10 +4,10 @@ import React, { useState } from 'react';
 import {
   Plus, Trash2, Save, Loader2,
   ListChecks, ToggleLeft, ToggleRight, FileQuestion,
-  Check, X,
+  Check, X, Mail,
 } from 'lucide-react';
 import { TopicResponse } from '@/services/courseService';
-import { topicApi, TopicQuizData, TopicQuizQuestion } from '@/services/topicService';
+import { topicApi, TopicQuizData } from '@/services/topicService';
 import { toast } from 'sonner';
 
 import { useRouter } from 'next/navigation';
@@ -40,6 +40,25 @@ export function TeacherQuizSettings({ quiz, courseId, onUpdate, onTabChange }: T
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isSendingNotification, setIsSendingNotification] = useState(false);
+
+  // ── Send Email Notification ───────────────────────────────────────
+  const handleSendNotification = async () => {
+    setIsSendingNotification(true);
+    try {
+      const res = await topicApi.notifyStudents(courseId, quiz.id);
+      const count = res.data?.count ?? 0;
+      toast.success(
+        count > 0
+          ? `Notification sent to ${count} student${count > 1 ? 's' : ''}!`
+          : 'Notification sent! (No enrolled students)',
+      );
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to send notification');
+    } finally {
+      setIsSendingNotification(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -181,10 +200,18 @@ export function TeacherQuizSettings({ quiz, courseId, onUpdate, onTabChange }: T
         </div>
       </div>
 
-      {/* ── Save Button ─────────────────────────────────────────── */}
-      <div className="flex justify-center pt-8 border-t border-gray-100 mt-8">
-        <button 
-          onClick={handleSave} 
+      {/* ── Action Buttons ─────────────────────────────────────────── */}
+      <div className="flex justify-center gap-4 pt-8 border-t border-gray-100 mt-8">
+        <button
+          onClick={handleSendNotification}
+          disabled={isSendingNotification}
+          className="bg-blue-500 hover:bg-blue-600 text-white font-black px-6 py-3 rounded-xl shadow-md shadow-blue-100 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {isSendingNotification ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+          {isSendingNotification ? 'Sending...' : 'Send Email Notification'}
+        </button>
+        <button
+          onClick={handleSave}
           disabled={isSaving}
           className="bg-pink-600 hover:bg-pink-700 text-white font-black px-10 py-3 rounded-xl shadow-lg shadow-pink-200 transition-all hover:scale-[1.02] active:scale-[0.98] min-w-[140px] flex items-center justify-center gap-2"
         >

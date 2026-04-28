@@ -130,5 +130,8 @@ export const topicApi = {
       avatarUrl: string;
       name: string;
     }>(`/Course/${courseId}/meeting/${topicId}/token`),
+
+  notifyStudents: (courseId: string, topicId: string) =>
+    axiosInstance.post(`/course/${courseId}/topic/${topicId}/notify`),
 };
 
