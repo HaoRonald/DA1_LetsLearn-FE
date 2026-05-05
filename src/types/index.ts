@@ -68,3 +68,14 @@ export interface UserBasicInfo {
   username: string;
   avatar?: string;
 }
+
+// ========== Notification ==========
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type?: string;
+  entityId?: string;
+  timestamp: string;
+  isRead: boolean;
+}

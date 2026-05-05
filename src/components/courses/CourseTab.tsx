@@ -998,106 +998,99 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
               </button>
             </div>
 
-            {/* Tabs */}
-            <div className="px-6 flex items-center gap-6 border-b border-gray-100">
-              <button className="py-3 text-[14px] font-bold text-[#3B82F6] border-b-2 border-[#3B82F6]">
-                All
-              </button>
-              <button className="py-3 text-[14px] font-medium text-gray-500 hover:text-gray-700">
-                Activities
-              </button>
-              <button className="py-3 text-[14px] font-medium text-gray-500 hover:text-gray-700">
-                Resources
-              </button>
-            </div>
-
-            <div className="p-6">
+            <div className="p-6 overflow-y-auto max-h-[70vh]">
               {!selectedTopicType ? (
-                <>
-                  <div className="flex items-center gap-2 mb-6">
-                    <div className="h-px bg-gray-100 flex-1"></div>
-                    <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-2">
-                      Choose Topic Type
-                    </span>
-                    <div className="h-px bg-gray-100 flex-1"></div>
+                <div className="space-y-8">
+                  {/* Activities Section */}
+                  <div>
+                    <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-3">
+                      <span className="w-8 h-px bg-gray-200"></span>
+                      Activities
+                      <span className="flex-1 h-px bg-gray-200"></span>
+                    </h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      {[
+                        {
+                          name: "Assignment",
+                          type: "assignment",
+                          icon: <FileUp className="w-7 h-7 text-[#8B5CF6]" strokeWidth={1.5} />,
+                          color: "hover:border-[#8B5CF6] hover:bg-violet-50/50",
+                        },
+                        {
+                          name: "Quiz",
+                          type: "quiz",
+                          icon: <ListChecks className="w-7 h-7 text-[#EC4899]" strokeWidth={1.5} />,
+                          color: "hover:border-[#EC4899] hover:bg-pink-50/50",
+                        },
+                        {
+                          name: "Meeting",
+                          type: "meeting",
+                          icon: <Video className="w-7 h-7 text-[#3B82F6]" strokeWidth={1.5} />,
+                          color: "hover:border-[#3B82F6] hover:bg-blue-50/50",
+                        },
+                      ].map((opt) => (
+                        <button
+                          key={opt.name}
+                          disabled={isSaving}
+                          onClick={() => setSelectedTopicType(opt.type)}
+                          className={`group flex flex-col items-center justify-center p-4 h-28 border-2 border-gray-100 rounded-2xl transition-all hover:shadow-md disabled:opacity-50 ${opt.color}`}
+                        >
+                          <div className="mb-3 bg-white p-2 rounded-xl shadow-sm border border-gray-50 group-hover:scale-110 transition-transform">
+                            {opt.icon}
+                          </div>
+                          <span className="text-[14px] font-bold text-gray-700">
+                            {opt.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    {[
-                      {
-                        name: "Assignment",
-                        type: "assignment",
-                        icon: (
-                          <FileUp
-                            className="w-7 h-7 text-[#8B5CF6]"
-                            strokeWidth={1.5}
-                          />
-                        ),
-                      },
-                      {
-                        name: "Quiz",
-                        type: "quiz",
-                        icon: (
-                          <ListChecks
-                            className="w-7 h-7 text-[#EC4899]"
-                            strokeWidth={1.5}
-                          />
-                        ),
-                      },
-                      {
-                        name: "Meeting",
-                        type: "meeting",
-                        icon: (
-                          <Video
-                            className="w-7 h-7 text-[#3B82F6]"
-                            strokeWidth={1.5}
-                          />
-                        ),
-                      },
-                      {
-                        name: "File",
-                        type: "file",
-                        icon: (
-                          <FileText
-                            className="w-7 h-7 text-[#3B82F6]"
-                            strokeWidth={1.5}
-                          />
-                        ),
-                      },
-                      {
-                        name: "Link",
-                        type: "link",
-                        icon: (
-                          <LinkIcon
-                            className="w-7 h-7 text-[#10B981]"
-                            strokeWidth={1.5}
-                          />
-                        ),
-                      },
-                      {
-                        name: "Page",
-                        type: "page",
-                        icon: (
-                          <FileText
-                            className="w-7 h-7 text-[#EC4899]"
-                            strokeWidth={1.5}
-                          />
-                        ),
-                      },
-                    ].map((opt) => (
-                      <button
-                        key={opt.name}
-                        disabled={isSaving}
-                        onClick={() => setSelectedTopicType(opt.type)}
-                        className="flex flex-col items-center justify-center p-4 h-28 border border-gray-200 hover:border-[#3B82F6] hover:bg-blue-50/30 rounded-2xl transition-all hover:shadow-sm disabled:opacity-50"
-                      >
-                        <div className="mb-2">{opt.icon}</div>
-                        <span className="text-[14px] font-medium text-gray-600">
-                          {opt.name}
-                        </span>
-                      </button>
-                    ))}
+
+                  {/* Resources Section */}
+                  <div>
+                    <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-3">
+                      <span className="w-8 h-px bg-gray-200"></span>
+                      Resources
+                      <span className="flex-1 h-px bg-gray-200"></span>
+                    </h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      {[
+                        {
+                          name: "File",
+                          type: "file",
+                          icon: <FileText className="w-7 h-7 text-[#F59E0B]" strokeWidth={1.5} />,
+                          color: "hover:border-[#F59E0B] hover:bg-amber-50/50",
+                        },
+                        {
+                          name: "Link",
+                          type: "link",
+                          icon: <LinkIcon className="w-7 h-7 text-[#10B981]" strokeWidth={1.5} />,
+                          color: "hover:border-[#10B981] hover:bg-emerald-50/50",
+                        },
+                        {
+                          name: "Page",
+                          type: "page",
+                          icon: <FileText className="w-7 h-7 text-[#6366F1]" strokeWidth={1.5} />,
+                          color: "hover:border-[#6366F1] hover:bg-indigo-50/50",
+                        },
+                      ].map((opt) => (
+                        <button
+                          key={opt.name}
+                          disabled={isSaving}
+                          onClick={() => setSelectedTopicType(opt.type)}
+                          className={`group flex flex-col items-center justify-center p-4 h-28 border-2 border-gray-100 rounded-2xl transition-all hover:shadow-md disabled:opacity-50 ${opt.color}`}
+                        >
+                          <div className="mb-3 bg-white p-2 rounded-xl shadow-sm border border-gray-50 group-hover:scale-110 transition-transform">
+                            {opt.icon}
+                          </div>
+                          <span className="text-[14px] font-bold text-gray-700">
+                            {opt.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </>
+                </div>
               ) : (
                   <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
                   <div className="space-y-2">

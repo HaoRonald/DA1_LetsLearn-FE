@@ -27,6 +27,8 @@ export const userService = {
   
   getMe: () => axiosInstance.get<UserProfile>('/user/me'),
 
+  getUserById: (id: string) => axiosInstance.get<UserProfile>(`/user/${id}`),
+
   updateMe: (data: { username?: string; avatar?: string }) =>
     axiosInstance.put<UserProfile>('/user/me', data),
 };

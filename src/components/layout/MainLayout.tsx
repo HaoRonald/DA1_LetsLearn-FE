@@ -23,6 +23,8 @@ import {
 import Link from "next/link";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import NotificationDropdown from "./NotificationDropdown";
+import { GlobalChatDrawer } from "@/components/chat/GlobalChatDrawer";
 
 export default function MainLayout({
   children,
@@ -83,9 +85,9 @@ export default function MainLayout({
               <Plus className="w-5 h-5" />
             </Link>
           )}
-          <button className="p-2 hover:bg-gray-100 rounded-md text-[#6B7280] transition-colors">
-            <MessageSquare className="w-5 h-5" />
-          </button>
+          <GlobalChatDrawer />
+          
+          <NotificationDropdown />
 
           <div className="relative">
             <div

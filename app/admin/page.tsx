@@ -326,7 +326,7 @@ export default function AdminPage() {
                             onKeyDown={(e) => e.key === 'Enter' && loadData('users')}
                           />
                         </div>
-                        <Select value={userRoleFilter} onValueChange={(val) => setUserRoleFilter(val)}>
+                        <Select value={userRoleFilter} onValueChange={(val) => setUserRoleFilter(val || "all")}>
                           <SelectTrigger className="w-full md:w-[180px]">
                             <SelectValue placeholder="All Roles" />
                           </SelectTrigger>

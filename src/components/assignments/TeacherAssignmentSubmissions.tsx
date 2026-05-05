@@ -137,8 +137,8 @@ export function TeacherAssignmentSubmissions({
     if (!selectedSubmission || !fullResponse || !assignment.id) return;
     
     const mark = parseFloat(gradeValue);
-    if (isNaN(mark) || mark < 0 || mark > 10) {
-      toast.error("Please enter a valid grade between 0 and 10");
+    if (isNaN(mark) || mark < 0 || mark > 100) {
+      toast.error("Please enter a valid grade between 0 and 100");
       return;
     }
 
@@ -254,7 +254,7 @@ export function TeacherAssignmentSubmissions({
                     <td className="p-4 text-[14px]">
                       {item.mark != null ? (
                         <span className="font-bold text-blue-600 px-2 py-1 bg-blue-50 rounded italic whitespace-nowrap">
-                          {item.mark}/10.0
+                          {item.mark}/100.0
                         </span>
                       ) : (
                         <span className="text-[#9CA3AF]">—</span>
@@ -420,19 +420,19 @@ export function TeacherAssignmentSubmissions({
                     
                     <div className="space-y-6 flex-1">
                       <div>
-                        <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Score (0-10)</label>
+                        <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Score (0-100)</label>
                         <div className="relative">
                           <input 
                             type="number" 
                             step="0.1"
                             min="0"
-                            max="10"
+                            max="100"
                             value={gradeValue}
                             onChange={(e) => setGradeValue(e.target.value)}
                             className="w-full bg-white border border-gray-200 rounded-2xl px-5 py-4 text-[24px] font-black text-blue-600 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
                             placeholder="0.0"
                           />
-                          <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[18px] font-bold text-gray-300">/10.0</span>
+                          <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[18px] font-bold text-gray-300">/100.0</span>
                         </div>
                       </div>
 
