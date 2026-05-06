@@ -16,7 +16,7 @@ interface UseGroupChatOptions {
 interface UseGroupChatReturn {
   messages: ChatMessage[];
   status: ConnectionStatus;
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (content: string, imageUrl?: string, fileUrl?: string) => Promise<void>;
   loadingHistory: boolean;
 }
 
@@ -158,15 +158,15 @@ export function useGroupChat({
 
   // ── Send message qua SignalR ─────────────────────────────────────────────────
   const sendMessage = useCallback(
-    async (content: string) => {
+    async (content: string, imageUrl?: string, fileUrl?: string) => {
       const conn = connectionRef.current;
       if (!conn || conn.state !== signalR.HubConnectionState.Connected) {
         throw new Error("Not connected to chat server.");
       }
-      if (!content.trim()) return;
+      if (!content.trim() && !imageUrl && !fileUrl) return;
 
       // Invoke hub method "SendMessage" — BE sẽ lưu DB rồi broadcast
-      await conn.invoke("SendMessage", conversationId, content.trim());
+      await conn.invoke("SendMessage", conversationId, content.trim(), imageUrl || null, fileUrl || null);
     },
     [conversationId]
   );

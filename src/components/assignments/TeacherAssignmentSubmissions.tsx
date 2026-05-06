@@ -356,19 +356,27 @@ export function TeacherAssignmentSubmissions({
                             fullResponse.data.files.map((file, idx) => (
                               <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-2xl hover:border-blue-200 hover:bg-white transition-all group">
                                 <div className="flex items-center gap-3 min-w-0">
-                                  <div className="p-2.5 bg-white rounded-xl text-blue-500 shadow-sm group-hover:scale-110 transition-transform">
-                                    <FileText className="w-4 h-4" />
+                                  <div className="p-2 bg-white rounded-xl text-blue-500 shadow-sm group-hover:scale-105 transition-transform overflow-hidden w-10 h-10 flex items-center justify-center shrink-0">
+                                    {file.displayUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) || file.displayUrl.includes('image/upload') ? (
+                                      <img src={file.displayUrl} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <FileText className="w-5 h-5" />
+                                    )}
                                   </div>
                                   <span className="text-[13px] font-bold text-gray-700 truncate">{file.name || 'document.pdf'}</span>
                                 </div>
-                                <a 
-                                  href={file.downloadUrl || file.displayUrl} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                                >
-                                  <Download className="w-5 h-5" />
-                                </a>
+                                <div className="flex items-center gap-1">
+                                  <a 
+                                    href={file.downloadUrl || file.displayUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                                    title="Tải về hoặc xem file"
+                                    download={file.name}
+                                  >
+                                    <Download className="w-5 h-5" />
+                                  </a>
+                                </div>
                               </div>
                             ))
                           ) : (

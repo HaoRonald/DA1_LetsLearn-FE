@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 import { TopicResponse } from '@/services/courseService';
 import { assignmentResponseApi, AssignmentResponseDTO } from '@/services/assignmentResponseService';
+import axiosInstance from '@/lib/axios';
 
 interface LearnerAssignmentViewProps {
   assignment: TopicResponse;
@@ -109,18 +110,26 @@ export function StudentAssignmentView({ assignment, courseId }: LearnerAssignmen
   const handleSubmit = async () => {
     setIsSaving(true);
     try {
-      // For now, we simulate file upload results or use mock data
-      // In a real app, you'd upload to Cloudinary/S3 first
-      const mockFiles = selectedFiles.map(f => ({
-        name: f.name,
-        displayUrl: "#", // Placeholder
-        downloadUrl: "#" // Placeholder
-      }));
+      // Upload each file to Cloudinary via our Media API
+      const uploadPromises = selectedFiles.map(async (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await axiosInstance.post("/Media/upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" }
+        });
+        return {
+          name: file.name,
+          displayUrl: res.data.data.displayUrl,
+          downloadUrl: res.data.data.downloadUrl
+        };
+      });
+
+      const uploadedFiles = await Promise.all(uploadPromises);
 
       const payload = {
         topicId: assignment.id,
         submittedAt: new Date().toISOString(),
-        cloudinaryFiles: mockFiles,
+        cloudinaryFiles: uploadedFiles,
         note: note
       };
 
@@ -236,9 +245,15 @@ export function StudentAssignmentView({ assignment, courseId }: LearnerAssignmen
                 {myResponse?.data?.files && myResponse.data.files.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {myResponse.data.files.map((f, idx) => (
-                      <div key={idx} className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded text-[12px]">
+                      <a 
+                        key={idx} 
+                        href={f.downloadUrl || f.displayUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors px-2 py-1 rounded text-[12px] font-medium border border-blue-100"
+                      >
                         <Paperclip className="w-3 h-3" /> {f.name}
-                      </div>
+                      </a>
                     ))}
                   </div>
                 ) : "No file submitted"}

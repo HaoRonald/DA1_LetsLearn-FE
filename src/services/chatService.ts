@@ -11,6 +11,8 @@ export interface ChatMessage {
   senderName: string;
   senderAvatar: string;
   content: string;
+  imageUrl?: string;
+  fileUrl?: string;
   timestamp: string; // ISO 8601
 }
 
