@@ -4,6 +4,7 @@ import axiosInstance from '@/lib/axios';
 export interface UserBasicInfo {
   id: string; // Guid from BE serialized as string
   username: string;
+  email?: string;
   avatar?: string;
 }
 

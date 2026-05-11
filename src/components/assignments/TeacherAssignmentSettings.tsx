@@ -1,8 +1,10 @@
 import { TopicResponse } from '@/services/courseService';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { topicApi } from '@/services/topicService';
+import { mediaApi } from '@/services/mediaService';
+import { downloadFile } from '@/lib/utils';
 import { toast } from 'sonner';
-import { UploadCloud, Paperclip, Loader2, Mail } from 'lucide-react';
+import { UploadCloud, Paperclip, Loader2, Mail, X, FileIcon, Download } from 'lucide-react';
 
 import { useRouter } from 'next/navigation';
 
@@ -13,13 +15,31 @@ interface TeacherAssignmentSettingsProps {
   onTabChange?: (tab: string) => void;
 }
 
+interface CloudinaryFile {
+  id?: string;
+  name: string;
+  displayUrl: string;
+  downloadUrl: string;
+}
+
 export function TeacherAssignmentSettings({ assignment, courseId, onUpdate, onTabChange }: TeacherAssignmentSettingsProps) {
   const router = useRouter();
   const assignmentData = assignment.data || {};
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // States for files
+  const [existingFiles, setExistingFiles] = useState<CloudinaryFile[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  
   const [isSaving, setIsSaving] = useState(false);
   const [isSendingNotification, setIsSendingNotification] = useState(false);
+
+  // Initialize existing files
+  useEffect(() => {
+    if (assignmentData.files || assignmentData.CloudinaryFiles) {
+      setExistingFiles(assignmentData.files || assignmentData.CloudinaryFiles || []);
+    }
+  }, [assignmentData]);
 
   // ── Send Email Notification ───────────────────────────────────────
   const handleSendNotification = async () => {
@@ -62,13 +82,35 @@ export function TeacherAssignmentSettings({ assignment, courseId, onUpdate, onTa
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setSelectedFiles(Array.from(e.target.files));
+      const files = Array.from(e.target.files);
+      setSelectedFiles(prev => [...prev, ...files]);
+      // Reset input so the same file can be picked again if removed
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  };
+
+  const removeExistingFile = (idx: number) => {
+    setExistingFiles(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const removeSelectedFile = (idx: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      // 1. Upload new files if any
+      let uploadedFiles: CloudinaryFile[] = [];
+      if (selectedFiles.length > 0) {
+        const uploadPromises = selectedFiles.map(file => mediaApi.upload(file));
+        const uploadResults = await Promise.all(uploadPromises);
+        uploadedFiles = uploadResults.map(res => res.data);
+      }
+
+      // 2. Combine with remaining existing files
+      const finalFiles = [...existingFiles, ...uploadedFiles];
+
       const payload = {
         id: assignment.id,
         title: form.title,
@@ -80,12 +122,16 @@ export function TeacherAssignmentSettings({ assignment, courseId, onUpdate, onTa
           remindToGrade: form.enableRemind && form.remindToGrade ? new Date(form.remindToGrade).toISOString() : null,
           maximumFile: form.enableMaxFiles ? form.maximumFile : 0,
           maximumFileSize: form.enableMaxSize ? form.maximumFileSize : null,
-          // Ánh xạ lại danh sách file cho đúng tên CloudinaryFiles mà BE yêu cầu
-          CloudinaryFiles: assignmentData.files || assignmentData.CloudinaryFiles || []
+          CloudinaryFiles: finalFiles
         }
       };
 
       await topicApi.update(courseId, assignment.id, payload);
+      
+      // Update local state after success
+      setExistingFiles(finalFiles);
+      setSelectedFiles([]);
+      
       toast.success("Settings saved successfully!");
       if (onUpdate) onUpdate();
       router.refresh();
@@ -138,7 +184,7 @@ export function TeacherAssignmentSettings({ assignment, courseId, onUpdate, onTa
 
           <div className="flex flex-col md:flex-row gap-4">
             <label className="md:w-1/4 text-[14px] font-bold text-[#374151] pt-2">Additional files</label>
-            <div className="flex-1 flex flex-col gap-3">
+            <div className="flex-1 flex flex-col gap-4">
               <div 
                 onClick={handleFileClick}
                 className="border-2 border-dashed border-[#E5E7EB] rounded-xl hover:border-blue-300 hover:bg-blue-50/30 transition-all cursor-pointer h-40 flex flex-col items-center justify-center text-center group"
@@ -161,23 +207,50 @@ export function TeacherAssignmentSettings({ assignment, courseId, onUpdate, onTa
                 </button>
               </div>
 
-              {selectedFiles.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {selectedFiles.map((file, idx) => (
-                    <div key={idx} className="flex items-center gap-2 bg-blue-50 border border-blue-100 text-[#3B82F6] px-3 py-1 rounded-full text-[12px] font-medium">
-                      <Paperclip className="w-3 h-3" />
-                      {file.name}
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
-                        }}
-                        className="hover:text-red-500 ml-1"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
+              {/* Combined File List */}
+              {(existingFiles.length > 0 || selectedFiles.length > 0) && (
+                <div className="space-y-2">
+                  <p className="text-[12px] font-bold text-gray-500 uppercase tracking-wider">Current Files</p>
+                  <div className="flex flex-wrap gap-2">
+                    {/* Existing Files */}
+                    {existingFiles.map((file, idx) => (
+                      <div key={`existing-${idx}`} className="flex items-center gap-2 bg-gray-50 border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg text-[12px] font-medium group">
+                        <FileIcon className="w-3.5 h-3.5 text-gray-400" />
+                        <span className="max-w-[150px] truncate cursor-default" title={file.name}>{file.name}</span>
+                        <div className="flex items-center gap-1 ml-auto">
+                          <button 
+                            onClick={() => downloadFile(file.downloadUrl || file.displayUrl, file.name)}
+                            className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                            title="Download"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </button>
+                          <button 
+                            onClick={() => removeExistingFile(idx)}
+                            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                            title="Remove"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Selected New Files */}
+                    {selectedFiles.map((file, idx) => (
+                      <div key={`selected-${idx}`} className="flex items-center gap-2 bg-blue-50 border border-blue-100 text-[#3B82F6] px-3 py-1.5 rounded-lg text-[12px] font-medium animate-in fade-in slide-in-from-left-2">
+                        <Paperclip className="w-3.5 h-3.5" />
+                        <span className="max-w-[150px] truncate">{file.name}</span>
+                        <span className="text-[10px] bg-blue-100 px-1 rounded uppercase font-bold">New</span>
+                        <button 
+                          onClick={() => removeSelectedFile(idx)}
+                          className="hover:text-red-500 transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

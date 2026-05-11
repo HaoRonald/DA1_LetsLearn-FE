@@ -67,7 +67,9 @@ export function GroupChatTab({ course }: GroupChatTabProps) {
           </div>
           <div className="flex-1 overflow-y-auto py-2">
             {course.students && course.students.length > 0 ? (
-              course.students.map((s) => (
+              course.students
+                .filter((s) => s.id !== user.id)
+                .map((s) => (
                 <button
                   key={s.id}
                   onClick={() => openConversation(s.id, s.username)}

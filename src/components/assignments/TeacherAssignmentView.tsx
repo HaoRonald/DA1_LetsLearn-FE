@@ -9,6 +9,7 @@ import { commentApi, GetCommentResponse } from '@/services/commentService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect } from 'react';
 import { TopicResponse } from '@/services/courseService';
+import { downloadFile } from '@/lib/utils';
 
 interface TeacherAssignmentViewProps {
   assignment: TopicResponse;
@@ -90,6 +91,25 @@ export function TeacherAssignmentView({ assignment, courseId, onTabChange }: Tea
         <p className="text-[#6B7280] text-[14px] mb-6">
           {assignmentData.description || "No description provided."}
         </p>
+
+        {/* Teacher's Additional Files */}
+        {(assignmentData.files || assignmentData.CloudinaryFiles) && (assignmentData.files?.length > 0 || assignmentData.CloudinaryFiles?.length > 0) && (
+          <div className="mb-8">
+            <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-3">Additional materials</h4>
+            <div className="flex flex-wrap gap-2">
+              {(assignmentData.files || assignmentData.CloudinaryFiles).map((file: any, idx: number) => (
+                <button 
+                  key={idx} 
+                  onClick={() => downloadFile(file.downloadUrl || file.displayUrl, file.name)}
+                  className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors group"
+                >
+                  <Paperclip className="w-4 h-4 text-gray-400 group-hover:text-[#3B82F6]" />
+                  {file.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <button 
           onClick={() => onTabChange?.("submissions")}

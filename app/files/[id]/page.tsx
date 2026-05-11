@@ -10,6 +10,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Loader2, FileText, ChevronRight, UploadCloud, Paperclip, ArrowLeft } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { downloadFile } from '@/lib/utils';
 
 export default function FileTopicPage() {
   const { id: topicId } = useParams() as { id: string };
@@ -221,14 +222,12 @@ export default function FileTopicPage() {
                                 {fileName}
                               </a>
                            </div>
-                           <a 
-                             href={fileUrl} 
-                             download 
-                             target="_blank"
+                           <button 
+                             onClick={() => downloadFile(fileUrl, fileName)}
                              className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-xl shadow-sm transition-all text-center"
                            >
                              Download
-                           </a>
+                           </button>
                         </div>
                        ) : (
                         <div className="text-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">

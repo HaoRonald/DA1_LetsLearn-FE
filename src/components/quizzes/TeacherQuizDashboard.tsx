@@ -103,23 +103,23 @@ export function TeacherQuizDashboard({ quiz, courseId }: TeacherQuizDashboardPro
   // Mark distribution from BE grading groups
   const markDistribution = [
     {
-      name: '80 - 100%', range: '80 - 100%', badge: 'S', color: '#22C55E',
+      name: '8.0 - 10', range: '8.0 - 10', badge: 'S', color: '#22C55E',
       students: report.studentWithMarkOver8,
     },
     {
-      name: '50 - 79%', range: '50 - 79%', badge: 'A', color: '#06B6D4',
+      name: '5.0 - 7.9', range: '5.0 - 7.9', badge: 'A', color: '#06B6D4',
       students: report.studentWithMarkOver5.filter(
         s => !report.studentWithMarkOver8.some(x => x.student.id === s.student.id)
       ),
     },
     {
-      name: '20 - 49%', range: '20 - 49%', badge: 'B', color: '#3B82F6',
+      name: '2.0 - 4.9', range: '2.0 - 4.9', badge: 'B', color: '#3B82F6',
       students: report.studentWithMarkOver2.filter(
         s => !report.studentWithMarkOver5.some(x => x.student.id === s.student.id)
       ),
     },
     {
-      name: '0 - 19%', range: '0 - 19%', badge: 'C', color: '#EAB308',
+      name: '0 - 1.9', range: '0 - 1.9', badge: 'C', color: '#EAB308',
       students: report.studentWithMarkOver0.filter(
         s => !report.studentWithMarkOver2.some(x => x.student.id === s.student.id)
       ),

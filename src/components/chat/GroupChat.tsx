@@ -6,6 +6,7 @@ import type { ChatMessage } from "@/services/chatService";
 import { Send, Wifi, WifiOff, Loader2, MessageCircle, Image as ImageIcon, Paperclip, X, FileIcon, Download } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import axiosInstance from "@/lib/axios";
+import { downloadFile } from "@/lib/utils";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 interface GroupChatProps {
@@ -87,20 +88,18 @@ function MessageBubble({ msg, isMine }: { msg: ChatMessage; isMine: boolean }) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className={`text-[12px] font-bold truncate ${isMine ? "text-white" : "text-gray-800"}`}>
-                  {msg.fileUrl.split('/').pop()?.split('_').pop() || "Document"}
+                  {msg.fileName || msg.fileUrl.split('/').pop()?.split('_').pop() || "Document"}
                 </p>
                 <p className={`text-[10px] ${isMine ? "text-blue-100" : "text-gray-400"}`}>File đính kèm</p>
               </div>
-              <a 
-                href={msg.fileUrl} 
-                target="_blank" 
-                rel="noopener noreferrer"
+              <button 
+                onClick={() => downloadFile(msg.fileUrl!, msg.fileName || msg.fileUrl!.split('/').pop()?.split('_').pop() || "Document")}
                 className={`w-8 h-8 rounded-full flex items-center justify-center hover:scale-110 transition-transform ${
                   isMine ? "bg-white/20 text-white" : "bg-white text-gray-600 shadow-sm"
                 }`}
               >
                 <Download className="w-4 h-4" />
-              </a>
+              </button>
             </div>
           )}
         </div>
@@ -179,9 +178,11 @@ export function GroupChat({ conversationId, currentUserId, title = "Chat" }: Gro
     setIsSending(true);
     try {
       const imageUrl = attachments.find(a => a.type === 'image')?.url;
-      const fileUrl = attachments.find(a => a.type === 'file')?.url;
+      const fileAttachment = attachments.find(a => a.type === 'file');
+      const fileUrl = fileAttachment?.url;
+      const fileName = fileAttachment?.name;
       
-      await sendMessage(trimmed, imageUrl, fileUrl);
+      await sendMessage(trimmed, imageUrl, fileUrl, fileName);
       setInput("");
       setAttachments([]);
       inputRef.current?.focus();

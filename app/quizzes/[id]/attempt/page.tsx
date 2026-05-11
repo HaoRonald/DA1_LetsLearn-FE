@@ -21,6 +21,7 @@ interface QuizAnswer {
 export default function QuizAttemptPage() {
   const { id: topicId } = useParams() as { id: string };
   const searchParams = useSearchParams();
+  const router = useRouter();
   const responseId = searchParams.get('responseId');
   const courseIdParam = searchParams.get('courseId');
 
@@ -51,7 +52,7 @@ export default function QuizAttemptPage() {
         const currentCourse = courseRes.data.find((c: any) =>
           c.topics?.some((t: any) => t.id === topicId)
         );
-        resolvedCourseId = currentCourse?.id;
+        resolvedCourseId = currentCourse?.id ?? null;
       }
 
       if (!resolvedCourseId) {

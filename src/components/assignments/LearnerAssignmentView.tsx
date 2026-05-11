@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { commentApi, GetCommentResponse } from '@/services/commentService';
 import { useAuth } from '@/contexts/AuthContext';
 
+import { cn, downloadFile } from '@/lib/utils';
 import { TopicResponse } from '@/services/courseService';
 import { assignmentResponseApi, AssignmentResponseDTO } from '@/services/assignmentResponseService';
 import axiosInstance from '@/lib/axios';
@@ -172,9 +173,28 @@ export function StudentAssignmentView({ assignment, courseId }: LearnerAssignmen
         </div>
         <hr className="border-[#E5E7EB] mb-6" />
 
-        <p className="text-[#6B7280] text-[14px] mb-8">
+        <p className="text-[#6B7280] text-[14px] mb-6">
           {assignmentData.description || "No description provided."}
         </p>
+
+        {/* Teacher's Additional Files */}
+        {(assignmentData.files || assignmentData.CloudinaryFiles) && (assignmentData.files?.length > 0 || assignmentData.CloudinaryFiles?.length > 0) && (
+          <div className="mb-8">
+            <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-3">Additional materials</h4>
+            <div className="flex flex-wrap gap-2">
+              {(assignmentData.files || assignmentData.CloudinaryFiles).map((file: any, idx: number) => (
+                <button 
+                  key={idx} 
+                  onClick={() => downloadFile(file.downloadUrl || file.displayUrl, file.name)}
+                  className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors group"
+                >
+                  <Paperclip className="w-4 h-4 text-gray-400 group-hover:text-[#3B82F6]" />
+                  {file.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center gap-4 mb-8">
           {!isSubmitting ? (
@@ -227,7 +247,7 @@ export function StudentAssignmentView({ assignment, courseId }: LearnerAssignmen
               <div className="p-4 font-bold text-[14px] text-[#374151] md:border-r md:border-[#E5E7EB]">Grading status</div>
               <div className="p-4 text-[14px] text-[#6B7280] md:col-span-2">
                 {myResponse?.data?.mark != null ? (
-                  <span className="font-bold text-blue-600">Graded: {myResponse.data.mark} / 100</span>
+                  <span className="font-bold text-blue-600">Graded: {myResponse.data.mark} / 10</span>
                 ) : (
                   "Not graded"
                 )}
@@ -245,15 +265,13 @@ export function StudentAssignmentView({ assignment, courseId }: LearnerAssignmen
                 {myResponse?.data?.files && myResponse.data.files.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {myResponse.data.files.map((f, idx) => (
-                      <a 
+                      <button 
                         key={idx} 
-                        href={f.downloadUrl || f.displayUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
+                        onClick={() => downloadFile(f.downloadUrl || f.displayUrl, f.name)}
                         className="flex items-center gap-1 bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors px-2 py-1 rounded text-[12px] font-medium border border-blue-100"
                       >
                         <Paperclip className="w-3 h-3" /> {f.name}
-                      </a>
+                      </button>
                     ))}
                   </div>
                 ) : "No file submitted"}

@@ -193,8 +193,8 @@ export function TeacherQuizSettings({ quiz, courseId, onUpdate, onTabChange }: T
 
           <div className="flex items-center gap-4">
             <label className="w-1/3 text-[14px] font-bold text-[#374151]">Grade to pass</label>
-            <input type="number" min="0" max="100" value={form.gradeToPass} onChange={e => setForm({ ...form, gradeToPass: e.target.value })}
-              placeholder="50"
+            <input type="number" min="0" max="10" value={form.gradeToPass} onChange={e => setForm({ ...form, gradeToPass: e.target.value })}
+              placeholder="5.0"
               className="flex-1 border border-[#E5E7EB] rounded-lg px-4 py-2 text-[14px]" />
           </div>
         </div>

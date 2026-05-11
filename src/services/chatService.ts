@@ -13,6 +13,7 @@ export interface ChatMessage {
   content: string;
   imageUrl?: string;
   fileUrl?: string;
+  fileName?: string;
   timestamp: string; // ISO 8601
 }
 

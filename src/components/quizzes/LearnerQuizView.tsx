@@ -199,10 +199,15 @@ export function StudentQuizView({ quiz, courseId }: LearnerQuizViewProps) {
                       <div className="font-bold text-[14px] text-[#06B6D4]">
                         Attempt {myAttempts.length - idx}
                       </div>
-                      <button className="flex items-center gap-1.5 text-[#3B82F6] hover:underline font-medium text-[13px]">
-                        <Eye className="w-4 h-4" />
-                        Review
-                      </button>
+                      {attempt.data?.status === 'Finished' && (
+                        <button 
+                          onClick={() => router.push(`/courses/${courseId}/quiz/${quiz.id}/${attempt.id}/reviewing`)}
+                          className="flex items-center gap-1.5 text-[#3B82F6] hover:underline font-medium text-[13px]"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Review
+                        </button>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-4 border-b border-[#E5E7EB] bg-white text-[14px]">
