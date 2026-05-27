@@ -12,6 +12,7 @@ import { CourseTab } from '@/components/courses/CourseTab';
 import { ActivitiesTab } from '@/components/courses/ActivitiesTab';
 import { PeopleTab } from '@/components/courses/PeopleTab';
 import { DashboardTab } from '@/components/courses/DashboardTab';
+import AiQuestionGenerationPage from '@/components/ai-questions/AiQuestionGenerationPage';
 
 export default function CourseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const unwrappedParams = React.use(params);
@@ -94,6 +95,13 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
               </TabsTrigger>
 
               <TabsTrigger 
+                value="ai-questions" 
+                className="flex-none w-auto bg-transparent h-auto px-2 pb-1.5 pt-1 text-[13px] md:text-[14px] font-bold text-[#9CA3AF] hover:text-[#6B7280] data-[state=active]:text-[#3B82F6] data-[state=active]:bg-transparent data-[state=active]:border-b-[3px] data-[state=active]:border-[#3B82F6] data-[state=active]:shadow-none rounded-sm transition-all"
+              >
+                AI Generate Questions
+              </TabsTrigger>
+
+              <TabsTrigger 
                 value="dashboard" 
                 className="flex-none w-auto bg-transparent h-auto px-2 pb-1.5 pt-1 text-[13px] md:text-[14px] font-bold text-[#9CA3AF] hover:text-[#6B7280] data-[state=active]:text-[#3B82F6] data-[state=active]:bg-transparent data-[state=active]:border-b-[3px] data-[state=active]:border-[#3B82F6] data-[state=active]:shadow-none rounded-sm transition-all"
               >
@@ -114,6 +122,10 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
 
             <TabsContent value="people" className="mt-0 outline-none">
               <PeopleTab course={course} />
+            </TabsContent>
+
+            <TabsContent value="ai-questions" className="mt-0 outline-none">
+              <AiQuestionGenerationPage courseId={course.id} />
             </TabsContent>
 
             <TabsContent value="dashboard" className="mt-0 outline-none">
