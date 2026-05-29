@@ -23,3 +23,27 @@ export async function downloadFile(url: string, filename: string) {
     window.open(url, '_blank');
   }
 }
+
+export function requestNotificationPermission() {
+  if (typeof window !== "undefined" && "Notification" in window) {
+    if (Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }
+}
+
+export function showNotification(title: string, body: string) {
+  if (typeof window !== "undefined" && "Notification" in window) {
+    if (Notification.permission === "granted") {
+      try {
+        new Notification(title, {
+          body,
+          icon: "/favicon.ico",
+        });
+      } catch (err) {
+        console.error("Failed to show notification:", err);
+      }
+    }
+  }
+}
+

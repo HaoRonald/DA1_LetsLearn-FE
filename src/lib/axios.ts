@@ -2,7 +2,7 @@ import axios from "axios";
 
 const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api",
-  timeout: 10000,
+  timeout: 60000, // 60s — đủ cho AI gen + poll không bị timeout sớm
   withCredentials: true, // Quan trọng: Cho phép gửi Cookie
   headers: {
     "Content-Type": "application/json",

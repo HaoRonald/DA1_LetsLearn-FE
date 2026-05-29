@@ -19,6 +19,7 @@ import {
   ArrowLeft,
   LogOut,
   UserIcon,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
@@ -36,15 +37,165 @@ export default function MainLayout({
   const { user, isAuthenticated, logout } = useAuth();
   const [isEnrolledOpen, setIsEnrolledOpen] = useState(true);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
   const activeTab = searchParams.get("tab") || "dashboard";
 
-  // Close user menu when navigation occurs
+  // Close user menu and mobile sidebar when navigation occurs
   useEffect(() => {
     setIsUserMenuOpen(false);
+    setIsMobileSidebarOpen(false);
   }, [pathname]);
+
+  const renderSidebarContent = () => {
+    const handleLinkClick = () => {
+      setIsMobileSidebarOpen(false);
+    };
+
+    return user?.role === "Admin" ? (
+      /* ADMIN SIDEBAR */
+      <div className="flex flex-col h-full">
+        <div className="px-6 mb-8">
+          <div className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-xl border border-red-100">
+            <ShieldCheck className="w-5 h-5" />
+            <span className="text-[12px] font-black uppercase tracking-wider">
+              Admin Control
+            </span>
+          </div>
+        </div>
+
+        <nav className="space-y-1 px-3 mb-6">
+          <p className="px-4 text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">
+            Main Menu
+          </p>
+          <Link
+            href="/admin"
+            className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "dashboard" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`}
+            onClick={handleLinkClick}
+          >
+            <LayoutDashboard className="w-5 h-5" />
+            <span className="text-[14px] font-bold">System Overview</span>
+          </Link>
+          <Link
+            href="/admin?tab=users"
+            className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "users" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`}
+            onClick={handleLinkClick}
+          >
+            <Users className="w-5 h-5" />
+            <span className="text-[14px] font-bold">User Management</span>
+          </Link>
+          <Link
+            href="/admin?tab=courses"
+            className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "courses" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`}
+            onClick={handleLinkClick}
+          >
+            <BookOpen className="w-5 h-5" />
+            <span className="text-[14px] font-bold">Course Control</span>
+          </Link>
+        </nav>
+
+        <nav className="space-y-1 px-3 mb-6">
+          <p className="px-4 text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">
+            Analysis
+          </p>
+          <Link
+            href="/admin?tab=statistics"
+            className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "statistics" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`}
+            onClick={handleLinkClick}
+          >
+            <BarChart3 className="w-5 h-5" />
+            <span className="text-[14px] font-bold">Statistics</span>
+          </Link>
+        </nav>
+
+        <div className="mt-auto px-3">
+          <div className="border-t border-[#E5E7EB] pt-4">
+            <Link
+              href="/settings"
+              className="flex items-center gap-4 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+              onClick={handleLinkClick}
+            >
+              <Settings className="w-5 h-5" />
+              <span className="text-[14px] font-bold">
+                System Settings
+              </span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    ) : (
+      /* TEACHER/LEARNER SIDEBAR */
+      <div className="flex flex-col h-full">
+        {/* Main Links */}
+        <nav className="space-y-1 px-3 mb-6">
+          <Link
+            href="/"
+            className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${isHomeActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
+            onClick={handleLinkClick}
+          >
+            <HomeIcon className="w-5 h-5" />
+            <span className="text-[14px] font-bold">Home</span>
+          </Link>
+          <Link
+            href="/calendar"
+            className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${isCalendarActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
+            onClick={handleLinkClick}
+          >
+            <Calendar className="w-5 h-5" />
+            <span className="text-[14px] font-bold">Calendar</span>
+          </Link>
+        </nav>
+
+        {/* Enrolled Section */}
+        <div className="mb-6">
+          <button
+            onClick={() => setIsEnrolledOpen(!isEnrolledOpen)}
+            className="w-full flex items-center justify-between px-6 py-2 text-[#6B7280] hover:bg-gray-50 transition-colors mb-1"
+          >
+            <div className="flex items-center gap-3">
+              <ChevronDown
+                className={`w-4 h-4 transition-transform ${!isEnrolledOpen ? "-rotate-90" : ""}`}
+              />
+              <GraduationCap className="w-5 h-5" />
+              <span className="text-[14px] font-bold text-[#374151]">
+                {isAdminOrTeacher ? "Teaching" : "Enrolled"}
+              </span>
+            </div>
+          </button>
+
+          {isEnrolledOpen && (
+            <div className="space-y-1">
+              <Link
+                href="/todo"
+                className={`flex items-center gap-4 px-9 py-2.5 transition-colors ${isTodoActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
+                onClick={handleLinkClick}
+              >
+                <ListTodo className="w-5 h-5" />
+                <span className="text-[14px] font-bold">
+                  {isAdminOrTeacher ? "To review" : "To-do"}
+                </span>
+              </Link>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-auto px-3">
+          <div className="border-t border-[#E5E7EB] pt-4">
+            <Link
+              href="/settings"
+              className="flex items-center gap-4 px-3 py-2.5 rounded-lg text-[#6B7280] hover:bg-gray-50 transition-colors"
+              onClick={handleLinkClick}
+            >
+              <Settings className="w-5 h-5" />
+              <span className="text-[14px] font-bold">Settings</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const isHomeActive = pathname === "/";
   const isDashboardActive = pathname.startsWith("/dashboard");
@@ -68,7 +219,11 @@ export default function MainLayout({
               <ArrowLeft className="w-5 h-5" />
             </button>
           )}
-          <button className="p-2 hover:bg-gray-100 rounded-md text-[#6B7280] transition-colors md:hidden">
+          <button
+            onClick={() => setIsMobileSidebarOpen(true)}
+            className="p-2 hover:bg-gray-100 rounded-md text-[#6B7280] transition-colors md:hidden"
+            aria-label="Open sidebar"
+          >
             <Menu className="w-5 h-5" />
           </button>
           {headerTitle || (
@@ -171,147 +326,53 @@ export default function MainLayout({
       </header>
 
       {/* --- MAIN LAYOUT (SIDEBAR + CONTENT) --- */}
-      <div className="flex flex-1 overflow-hidden h-[calc(100vh-64px)]">
+      <div className="flex flex-1 overflow-hidden h-[calc(100vh-64px)] relative">
         {/* SIDEBAR */}
         <aside className="w-64 border-r border-[#E5E7EB] bg-white flex-shrink-0 hidden md:flex flex-col py-4 overflow-y-auto">
-          {user?.role === "Admin" ? (
-            /* ADMIN SIDEBAR */
-            <div className="flex flex-col h-full">
-              <div className="px-6 mb-8">
-                <div className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-xl border border-red-100">
-                  <ShieldCheck className="w-5 h-5" />
-                  <span className="text-[12px] font-black uppercase tracking-wider">
-                    Admin Control
-                  </span>
-                </div>
-              </div>
-
-              <nav className="space-y-1 px-3 mb-6">
-                <p className="px-4 text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">
-                  Main Menu
-                </p>
-                <Link
-                  href="/admin"
-                  className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "dashboard" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`}
-                >
-                  <LayoutDashboard className="w-5 h-5" />
-                  <span className="text-[14px] font-bold">System Overview</span>
-                </Link>
-                <Link
-                  href="/admin?tab=users"
-                  className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "users" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`}
-                >
-                  <Users className="w-5 h-5" />
-                  <span className="text-[14px] font-bold">User Management</span>
-                </Link>
-                <Link
-                  href="/admin?tab=courses"
-                  className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "courses" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`}
-                >
-                  <BookOpen className="w-5 h-5" />
-                  <span className="text-[14px] font-bold">Course Control</span>
-                </Link>
-              </nav>
-
-              <nav className="space-y-1 px-3 mb-6">
-                <p className="px-4 text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">
-                  Analysis
-                </p>
-                <Link
-                  href="/admin?tab=statistics"
-                  className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "statistics" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`}
-                >
-                  <BarChart3 className="w-5 h-5" />
-                  <span className="text-[14px] font-bold">Statistics</span>
-                </Link>
-              </nav>
-
-              <div className="mt-auto px-3">
-                <div className="border-t border-[#E5E7EB] pt-4">
-                  <Link
-                    href="/settings"
-                    className="flex items-center gap-4 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
-                  >
-                    <Settings className="w-5 h-5" />
-                    <span className="text-[14px] font-bold">
-                      System Settings
-                    </span>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* TEACHER/LEARNER SIDEBAR */
-            <>
-              {/* Main Links */}
-              <nav className="space-y-1 px-3 mb-6">
-                <Link
-                  href="/"
-                  className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${isHomeActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
-                >
-                  <HomeIcon className="w-5 h-5" />
-                  <span className="text-[14px] font-bold">Home</span>
-                </Link>
-                <Link
-                  href="/calendar"
-                  className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${isCalendarActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
-                >
-                  <Calendar className="w-5 h-5" />
-                  <span className="text-[14px] font-bold">Calendar</span>
-                </Link>
-              </nav>
-
-              {/* Enrolled Section */}
-              <div className="mb-6">
-                <button
-                  onClick={() => setIsEnrolledOpen(!isEnrolledOpen)}
-                  className="w-full flex items-center justify-between px-6 py-2 text-[#6B7280] hover:bg-gray-50 transition-colors mb-1"
-                >
-                  <div className="flex items-center gap-3">
-                    <ChevronDown
-                      className={`w-4 h-4 transition-transform ${!isEnrolledOpen ? "-rotate-90" : ""}`}
-                    />
-                    <GraduationCap className="w-5 h-5" />
-                    <span className="text-[14px] font-bold text-[#374151]">
-                      {isAdminOrTeacher ? "Teaching" : "Enrolled"}
-                    </span>
-                  </div>
-                </button>
-
-                {isEnrolledOpen && (
-                  <div className="space-y-1">
-                    <Link
-                      href="/todo"
-                      className={`flex items-center gap-4 px-9 py-2.5 transition-colors ${isTodoActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
-                    >
-                      <ListTodo className="w-5 h-5" />
-                      <span className="text-[14px] font-bold">
-                        {isAdminOrTeacher ? "To review" : "To-do"}
-                      </span>
-                    </Link>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-auto px-3">
-                <div className="border-t border-[#E5E7EB] pt-4">
-                  <Link
-                    href="/settings"
-                    className="flex items-center gap-4 px-3 py-2.5 rounded-lg text-[#6B7280] hover:bg-gray-50 transition-colors"
-                  >
-                    <Settings className="w-5 h-5" />
-                    <span className="text-[14px] font-bold">Settings</span>
-                  </Link>
-                </div>
-              </div>
-            </>
-          )}
+          {renderSidebarContent()}
         </aside>
 
         {/* CONTENT AREA */}
         <main className="flex-1 overflow-y-auto bg-white relative">
           {children}
         </main>
+
+        {/* Mobile Sidebar Drawer */}
+        <div
+          className={`fixed inset-0 z-50 flex md:hidden transition-opacity duration-300 ${
+            isMobileSidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          }`}
+        >
+          {/* Backdrop overlay */}
+          <div
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+
+          {/* Drawer content */}
+          <aside
+            className={`relative w-64 max-w-xs bg-white h-full flex flex-col py-4 shadow-xl border-r border-[#E5E7EB] z-10 transition-transform duration-300 ${
+              isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
+          >
+            {/* Header / close button for mobile drawer */}
+            <div className="flex items-center justify-between px-6 pb-4 border-b border-gray-100 mb-4">
+              <span className="text-[16px] font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                EnglishApp
+              </span>
+              <button
+                onClick={() => setIsMobileSidebarOpen(false)}
+                className="p-1 hover:bg-gray-100 rounded-md text-[#6B7280]"
+                aria-label="Close sidebar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {renderSidebarContent()}
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   );

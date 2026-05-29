@@ -12,6 +12,7 @@ import {
   WandSparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+import { requestNotificationPermission, showNotification } from "@/lib/utils";
 import type { AxiosError } from "axios";
 import type {
   AiBloomLevel,
@@ -649,6 +650,25 @@ function AiGeneratedQuestionList({
         </div>
       ) : isLoading || isGenerating ? (
         <div className="p-5 space-y-4">
+          {/* AI Status Card */}
+          <div className="bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-100 rounded-xl p-5 flex flex-col md:flex-row items-center gap-4 animate-pulse shadow-sm">
+            <div className="w-12 h-12 rounded-full bg-[#7C3AED] flex items-center justify-center flex-shrink-0 shadow-md">
+              <Sparkles className="w-6 h-6 text-white animate-spin" />
+            </div>
+            <div className="flex-1 text-center md:text-left space-y-1">
+              <h3 className="text-[15px] font-black text-violet-900 flex items-center justify-center md:justify-start gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-violet-600" />
+                Đang biên soạn câu hỏi bằng AI...
+              </h3>
+              <p className="text-[13px] text-violet-700 leading-relaxed">
+                Trợ lý AI đang đọc hiểu tài liệu giảng trình, phân tích kiến thức để tự động sinh các câu hỏi trắc nghiệm chất lượng.
+              </p>
+              <p className="text-[12px] text-indigo-500 font-semibold italic">
+                Tiến trình này đang chạy nền (khoảng 1-2 phút). Bạn có thể tiếp tục đợi hoặc quay lại sau.
+              </p>
+            </div>
+          </div>
+
           {[0, 1, 2].map((item) => (
             <div key={item} className="animate-pulse rounded-lg border border-[#E5E7EB] p-4">
               <div className="h-4 w-1/3 rounded bg-[#E5E7EB]" />
@@ -712,6 +732,8 @@ export function AiQuestionGenerationPage({ courseId }: Props) {
   const [sort, setSort] = useState<QuestionSort>("score");
   const pollingRef = useRef<number | null>(null);
   const failedToastJobRef = useRef<string | null>(null);
+  const generateToastIdRef = useRef<string | number | null>(null);
+  const isMountedRef = useRef(true);
 
   const clearPolling = useCallback(() => {
     if (pollingRef.current) {
@@ -722,6 +744,10 @@ export function AiQuestionGenerationPage({ courseId }: Props) {
 
   const resetJobState = useCallback(() => {
     clearPolling();
+    if (generateToastIdRef.current) {
+      toast.dismiss(generateToastIdRef.current);
+      generateToastIdRef.current = null;
+    }
     setCurrentJobId(null);
     setJobStatus(null);
     setFailedMessage(null);
@@ -731,7 +757,17 @@ export function AiQuestionGenerationPage({ courseId }: Props) {
     failedToastJobRef.current = null;
   }, [clearPolling]);
 
-  useEffect(() => clearPolling, [clearPolling]);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      // Nếu không có polling nào đang chạy thì dọn dẹp sạch sẽ
+      if (!pollingRef.current) {
+        clearPolling();
+      }
+      // Không ẩn toast để khi chạy xong ở trang khác, toast vẫn tự động cập nhật
+    };
+  }, [clearPolling]);
 
   const handleFileChange = (file: File | null) => {
     if (file && !isAllowedFile(file)) {
@@ -783,34 +819,68 @@ export function AiQuestionGenerationPage({ courseId }: Props) {
     async (jobId: string) => {
       try {
         const job = await getAiQuestionJob(jobId);
-        setJobStatus(job.status);
-        if ("knowledgePoint" in job) {
-          setJobKnowledgePoint(job.knowledgePoint ?? null);
+        if (isMountedRef.current) {
+          setJobStatus(job.status);
+          if ("knowledgePoint" in job) {
+            setJobKnowledgePoint(job.knowledgePoint ?? null);
+          }
         }
         if (job.status === "failed") {
           const failureMessage = getJobFailureMessage(job.errorMessage, job.message);
-          setFailedMessage(failureMessage);
+          if (isMountedRef.current) {
+            setFailedMessage(failureMessage);
+          }
+          if (generateToastIdRef.current) {
+            toast.dismiss(generateToastIdRef.current);
+            generateToastIdRef.current = null;
+          }
           if (failedToastJobRef.current !== jobId) {
             failedToastJobRef.current = jobId;
             toast.error("Question generation failed", {
               description: failureMessage,
             });
+            showNotification("LetsLearn AI", "Sinh câu hỏi trắc nghiệm bằng AI thất bại.");
           }
         }
         if (job.status === "completed" || job.status === "needs_review") {
           clearPolling();
-          await loadQuestions(jobId, job.questions);
+          if (isMountedRef.current) {
+            await loadQuestions(jobId, job.questions);
+          }
+          if (generateToastIdRef.current) {
+            toast.dismiss(generateToastIdRef.current);
+            generateToastIdRef.current = null;
+          }
+          toast.success("Sinh bộ câu hỏi trắc nghiệm bằng AI thành công!");
+          showNotification("LetsLearn AI", "Sinh bộ câu hỏi trắc nghiệm bằng AI thành công!");
         } else if (job.status === "failed") {
           clearPolling();
         }
       } catch (error) {
+        // Lỗi mạng tạm thời (timeout, network glitch) → bỏ qua, tiếp tục poll
+        const err = error as import("axios").AxiosError;
+        const status = err.response?.status;
+        const isNetworkOrTimeout = !status || err.code === "ECONNABORTED" || err.code === "ERR_NETWORK";
+        if (isNetworkOrTimeout) {
+          // Không dừng polling — thử lại ở lần poll tiếp theo
+          return;
+        }
+        // Lỗi 4xx thực sự (not found, forbidden...) → dừng và báo lỗi
         clearPolling();
-      setJobStatus("failed");
-      const failureMessage = getApiErrorMessage(error);
-      setFailedMessage(failureMessage);
-      toast.error("Question generation failed", {
-        description: failureMessage,
-      });
+        if (isMountedRef.current) {
+          setJobStatus("failed");
+          const failureMessage = getApiErrorMessage(error);
+          setFailedMessage(failureMessage);
+        }
+        if (generateToastIdRef.current) {
+          toast.dismiss(generateToastIdRef.current);
+          generateToastIdRef.current = null;
+        }
+        const failureMessage = getApiErrorMessage(error);
+        toast.error("Question generation failed", {
+          description: failureMessage,
+        });
+        showNotification("LetsLearn AI", "Sinh câu hỏi trắc nghiệm bằng AI thất bại.");
       }
     },
     [clearPolling, loadQuestions],
@@ -868,6 +938,16 @@ export function AiQuestionGenerationPage({ courseId }: Props) {
     setFailedMessage(null);
     setJobKnowledgePoint(null);
     failedToastJobRef.current = null;
+
+    requestNotificationPermission();
+    const toastId = toast.loading("Trợ lý AI đang khởi tạo tiến trình sinh câu hỏi trắc nghiệm từ tài liệu. Vui lòng đợi...", {
+      cancel: {
+        label: "Ẩn",
+        onClick: () => {}
+      }
+    });
+    generateToastIdRef.current = toastId;
+
     try {
       const trimmedKnowledgePoint = knowledgePoint.trim();
       const payloadKnowledgePoint =
@@ -891,16 +971,29 @@ export function AiQuestionGenerationPage({ courseId }: Props) {
         const failureMessage = getJobFailureMessage(job.errorMessage, job.message);
         setFailedMessage(failureMessage);
         failedToastJobRef.current = job.jobId;
+        if (generateToastIdRef.current) {
+          toast.dismiss(generateToastIdRef.current);
+          generateToastIdRef.current = null;
+        }
         toast.error("Question generation failed", {
           description: failureMessage,
         });
       }
       if (job.status === "completed" || job.status === "needs_review") {
         await loadQuestions(job.jobId, job.questions);
+        if (generateToastIdRef.current) {
+          toast.dismiss(generateToastIdRef.current);
+          generateToastIdRef.current = null;
+        }
+        toast.success("Sinh bộ câu hỏi trắc nghiệm bằng AI thành công!");
       } else if (job.status !== "failed") {
         startPolling(job.jobId);
       }
     } catch (error) {
+      if (generateToastIdRef.current) {
+        toast.dismiss(generateToastIdRef.current);
+        generateToastIdRef.current = null;
+      }
       toast.error(getApiErrorMessage(error));
     } finally {
       setGenerateLoading(false);
