@@ -571,7 +571,18 @@ function HomeContent({
   setSearchQuery,
   filterPublished,
   setFilterPublished,
-}: any) {
+}: {
+  user: any;
+  isAuthenticated: boolean;
+  courses: CourseResponse[];
+  loading: boolean;
+  fetchCourses: () => Promise<void>;
+  isAdminOrTeacher: boolean;
+  searchQuery: string;
+  setSearchQuery: (val: string) => void;
+  filterPublished: "all" | "published" | "draft";
+  setFilterPublished: (val: "all" | "published" | "draft") => void;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const processedRef = useRef(false);
@@ -601,7 +612,7 @@ function HomeContent({
   }, [searchParams, fetchCourses]);
 
   // ── Filter + search ───────────────────────────────────────────────────────
-  const filtered = courses.filter((c: any) => {
+  const filtered = courses.filter((c: CourseResponse) => {
     const matchSearch =
       !searchQuery ||
       c.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -617,10 +628,14 @@ function HomeContent({
   });
 
   // ── Stats for teacher ─────────────────────────────────────────────────────
-  const publishedCount = courses.filter((c: any) => c.isPublished).length;
-  const draftCount = courses.filter((c: any) => !c.isPublished).length;
+  const publishedCount = courses.filter(
+    (c: CourseResponse) => c.isPublished,
+  ).length;
+  const draftCount = courses.filter(
+    (c: CourseResponse) => !c.isPublished,
+  ).length;
   const totalStudents = courses.reduce(
-    (acc: number, c: any) => acc + (c.totalJoined || 0),
+    (acc: number, c: CourseResponse) => acc + (c.totalJoined || 0),
     0,
   );
   const enrolledCourseIds = new Set(
@@ -633,27 +648,61 @@ function HomeContent({
     <MainLayout>
       <div className="p-6 lg:p-10 bg-[#F9FAFB] min-h-full">
         <div className="max-w-7xl mx-auto">
-          {/* ── Header ────────────────────────────────────────────────────── */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-            <div>
-              <h1 className="text-[28px] font-black text-[#111827]">
-                {isAdminOrTeacher ? "My Teaching Courses" : "Explore Courses"}
-              </h1>
-              <p className="text-[#6B7280] text-[15px] mt-1">
-                {isAdminOrTeacher
-                  ? "Manage and monitor all courses you created"
-                  : "Discover and join courses to start learning"}
-              </p>
-            </div>
+          {/* ── Premium Hero Banner ────────────────────────────────────────── */}
+          <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#0d1e36] via-[#10243e] to-[#1e3a8a] text-white p-8 lg:p-12 mb-8 shadow-xl shadow-blue-900/10 border border-white/5 animate-in fade-in slide-in-from-top-4 duration-500">
+            {/* Background decorative elements */}
+            <div className="absolute -top-12 -right-12 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute -bottom-16 left-1/3 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-            {isAdminOrTeacher && (
-              <button
-                onClick={() => router.push("/courses/create")}
-                className="flex items-center gap-2 bg-[#3B82F6] hover:bg-[#2563EB] text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm hover:shadow-md shrink-0"
-              >
-                <Plus className="w-4 h-4" /> Create Course
-              </button>
-            )}
+            <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+              <div className="flex-1">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/10 mb-4 animate-pulse">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#F97316]"></span>
+                  <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-blue-200">
+                    The Intelligent Study & Collaboration Platform
+                  </span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight leading-tight">
+                  {isAdminOrTeacher
+                    ? "Welcome Back, Instructor"
+                    : "Unleash Your Learning Potential"}
+                </h1>
+                <p className="text-blue-200/80 text-[14px] sm:text-[15px] mt-2 max-w-xl font-medium leading-relaxed">
+                  {isAdminOrTeacher
+                    ? "Manage and monitor all your courses, lectures, and students in real time."
+                    : "Join interactive courses, practice with AI-generated exercises, and learn with friends."}
+                </p>
+              </div>
+
+              {isAdminOrTeacher ? (
+                <button
+                  onClick={() => router.push("/courses/create")}
+                  className="flex items-center gap-2 bg-[#F97316] hover:bg-[#EA580C] text-white px-6 py-3 rounded-2xl font-black text-[15px] transition-all shadow-lg shadow-orange-500/25 hover:shadow-orange-500/35 hover:scale-[1.02] active:scale-[0.98] shrink-0 cursor-pointer border-transparent"
+                >
+                  <Plus className="w-5 h-5" /> Create Course
+                </button>
+              ) : (
+                <div className="flex items-center gap-6 bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-2xl shrink-0 shadow-lg">
+                  <div className="text-right">
+                    <p className="text-[10px] text-blue-300 font-black uppercase tracking-wider">
+                      Courses
+                    </p>
+                    <p className="text-2xl font-black text-[#F97316] mt-0.5">
+                      {courses.length}
+                    </p>
+                  </div>
+                  <div className="w-px h-10 bg-white/10"></div>
+                  <div className="text-right">
+                    <p className="text-[10px] text-blue-300 font-black uppercase tracking-wider">
+                      Enrolled
+                    </p>
+                    <p className="text-2xl font-black text-blue-400 mt-0.5">
+                      {user?.enrollments?.length || 0}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* ── Teacher Stats Bar ─────────────────────────────────────────── */}
@@ -719,9 +768,9 @@ function HomeContent({
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {courses
-                  .filter((c) => enrolledCourseIds.has(c.id))
+                  .filter((c: CourseResponse) => enrolledCourseIds.has(c.id))
                   .slice(0, 4)
-                  .map((course) => (
+                  .map((course: CourseResponse) => (
                     <LearnerCourseCard
                       key={course.id}
                       course={course}
@@ -810,7 +859,7 @@ function HomeContent({
             </div>
           ) : isAdminOrTeacher ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filtered.map((course) => (
+              {filtered.map((course: CourseResponse) => (
                 <TeacherCourseCard
                   key={course.id}
                   course={course}
@@ -823,7 +872,7 @@ function HomeContent({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filtered.map((course) => (
+              {filtered.map((course: CourseResponse) => (
                 <LearnerCourseCard
                   key={course.id}
                   course={course}

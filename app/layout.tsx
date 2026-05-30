@@ -9,10 +9,10 @@ const nunito = Nunito({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | EnglishApp',
-    default: 'EnglishApp – Học tiếng Anh hiệu quả',
+    template: "%s | Let's learn",
+    default: "Let's learn – Nền tảng hỗ trợ học tập thông minh",
   },
-  description: 'Nền tảng học tiếng Anh trực tuyến với bài học đa dạng, từ vựng phong phú và luyện tập tương tác.',
+  description: "Nền tảng hỗ trợ học tập trực tuyến với bài học đa dạng, bài tập phong phú và học tập tương tác.",
 };
 
 import { Toaster } from 'sonner';

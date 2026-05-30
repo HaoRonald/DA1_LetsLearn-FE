@@ -43,119 +43,194 @@ export default function RegisterPage() {
   };
 
   return (
-    <div
-      className="flex min-h-screen items-center justify-center p-4 font-sans relative overflow-hidden"
-      style={{
-        backgroundImage: "url(/bg.png)",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
-    >
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"></div>
+    <div className="min-h-screen w-full flex items-center justify-center bg-white font-sans overflow-x-hidden relative p-6 sm:p-8 md:p-12">
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes float-slow {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(80px, -60px) scale(1.2); }
+        }
+        @keyframes float-slower {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(-90px, 50px) scale(1.25); }
+        }
+        @keyframes float-reverse {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(-60px, -80px) scale(0.85); }
+        }
+        .animate-float-slow {
+          animation: float-slow 10s ease-in-out infinite !important;
+        }
+        .animate-float-slower {
+          animation: float-slower 14s ease-in-out infinite !important;
+        }
+        .animate-float-reverse {
+          animation: float-reverse 12s ease-in-out infinite !important;
+        }
+      `}} />
 
-      <div className="w-full max-w-[400px] bg-white/95 p-6 rounded-xl shadow-2xl border border-gray-100 relative z-10 backdrop-blur-md">
-        {/* Header */}
-        <div className="mb-5">
-          <p className="text-sm font-bold tracking-wider text-[#3B82F6] mb-1 uppercase">
-            Let&apos;s learn
-          </p>
-          <h1 className="text-xl font-bold text-black">Create an account</h1>
+      {/* Radial Gradient for Vignette effect */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_20%,#f8fafc_100%)] pointer-events-none z-0"></div>
+
+      {/* Animated Glowing Blobs (Aurora Effect) */}
+      <div className="absolute top-[10%] left-[10%] w-[350px] h-[350px] bg-blue-400/18 rounded-full blur-[70px] pointer-events-none animate-float-slow z-0"></div>
+      <div className="absolute bottom-[15%] right-[15%] w-[400px] h-[400px] bg-orange-400/15 rounded-full blur-[80px] pointer-events-none animate-float-slower z-0"></div>
+      <div className="absolute top-[45%] left-[55%] w-[280px] h-[280px] bg-cyan-400/18 rounded-full blur-[60px] pointer-events-none animate-float-reverse z-0"></div>
+
+      {/* Blueprint Grid Overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none z-0"></div>
+
+      {/* Main Content Wrapper (Centers and clusters the columns) */}
+      <div className="w-full max-w-5xl flex flex-col md:flex-row items-center justify-center gap-10 md:gap-16 lg:gap-20 relative z-10">
+        
+        {/* LEFT COLUMN: REGISTER FORM */}
+        <div className="w-full md:w-1/2 flex justify-center md:justify-end shrink-0">
+          <div className="w-full max-w-[400px] bg-white p-8 rounded-2xl border border-zinc-200/80 shadow-[0_20px_50px_rgba(0,0,0,0.06)]">
+            
+            <div className="mb-6 text-left">
+              <h1 className="text-2xl font-bold text-zinc-900 tracking-tight mb-2">Create an account</h1>
+              <p className="text-xs text-zinc-500 leading-relaxed">
+                Get started with your collaborative learning journey.
+              </p>
+            </div>
+
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-zinc-600 uppercase tracking-wider block">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                  <Input
+                    type="email"
+                    placeholder="m@example.com"
+                    className="pl-10 w-full bg-zinc-50/50 border border-zinc-200 text-zinc-900 rounded-lg h-[42px] text-sm focus-visible:ring-1 focus-visible:ring-blue-600 focus-visible:ring-offset-0 focus-visible:border-blue-600 placeholder-zinc-400"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-zinc-600 uppercase tracking-wider block">
+                  Username
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                  <Input
+                    type="text"
+                    placeholder="username"
+                    className="pl-10 w-full bg-zinc-50/50 border border-zinc-200 text-zinc-900 rounded-lg h-[42px] text-sm focus-visible:ring-1 focus-visible:ring-blue-600 focus-visible:ring-offset-0 focus-visible:border-blue-600 placeholder-zinc-400"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-zinc-600 uppercase tracking-wider block">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className="pl-10 pr-10 w-full bg-zinc-50/50 border border-zinc-200 text-zinc-900 rounded-lg h-[42px] text-sm focus-visible:ring-1 focus-visible:ring-blue-600 focus-visible:ring-offset-0 focus-visible:border-blue-600 placeholder-zinc-400"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-800 transition-colors"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-zinc-600 uppercase tracking-wider block">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                  <Input
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className="pl-10 pr-10 w-full bg-zinc-50/50 border border-zinc-200 text-zinc-900 rounded-lg h-[42px] text-sm focus-visible:ring-1 focus-visible:ring-blue-600 focus-visible:ring-offset-0 focus-visible:border-blue-600 placeholder-zinc-400"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-800 transition-colors"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 px-1 py-1">
+                <Checkbox
+                  id="isTeacher"
+                  checked={isTeacher}
+                  onCheckedChange={(c) => setIsTeacher(c as boolean)}
+                  className="border-zinc-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                />
+                <label htmlFor="isTeacher" className="text-xs text-zinc-600 font-medium select-none cursor-pointer">
+                  Register as a teacher
+                </label>
+              </div>
+
+              {error && <p className="text-xs text-red-500 font-semibold">{error}</p>}
+
+              <Button
+                type="submit"
+                className="w-full bg-zinc-900 hover:bg-zinc-800 text-white h-[44px] font-bold text-sm rounded-lg mt-4 transition-all duration-200 border-transparent cursor-pointer"
+                disabled={loading}
+              >
+                {loading ? "Creating Account..." : "Register"}
+              </Button>
+            </form>
+
+            <p className="mt-5 text-center text-xs text-zinc-500">
+              Already have an account?{" "}
+              <Link href="/login" className="text-blue-600 hover:underline font-semibold transition-colors">
+                Login
+              </Link>
+            </p>
+          </div>
         </div>
 
-        <form onSubmit={handleRegister} className="space-y-3">
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
-            <Input
-              type="email"
-              placeholder="Email"
-              className="pl-9 h-[40px] text-[13px] border-[#9CA3AF]/30 focus-visible:ring-[#3B82F6]"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+        {/* RIGHT COLUMN: BRANDING (CENTERED CONTENT) */}
+        <div className="hidden md:flex md:w-1/2 flex-col items-center justify-center shrink-0">
+          <div className="max-w-lg text-center flex flex-col items-center">
+            
+            {/* Large Logo */}
+            <img 
+              src="/logo.jpg" 
+              alt="Let's learn Logo" 
+              className="w-52 md:w-64 h-auto rounded-2xl shadow-md mb-8"
             />
+
+            {/* Slogan */}
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-zinc-900 leading-tight tracking-tight">
+              Connect, collaborate & <br />
+              <span className="text-blue-600">study smarter</span> with AI.
+            </h2>
+            <p className="text-sm font-bold text-zinc-400 tracking-widest mt-4 uppercase">
+              INTELLIGENT CO-STUDY COMPANION
+            </p>
           </div>
+        </div>
 
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
-            <Input
-              type="text"
-              placeholder="Username"
-              className="pl-9 h-[40px] text-[13px] border-[#9CA3AF]/30 focus-visible:ring-[#3B82F6]"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
-            <Input
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              className="pl-9 pr-10 h-[40px] text-[13px] border-[#9CA3AF]/30 focus-visible:ring-[#3B82F6]"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <button
-              type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-black transition-colors"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-            </button>
-          </div>
-
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
-            <Input
-              type={showConfirmPassword ? "text" : "password"}
-              placeholder="Confirm password"
-              className="pl-9 pr-10 h-[40px] text-[13px] border-[#9CA3AF]/30 focus-visible:ring-[#3B82F6]"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-            />
-            <button
-              type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-black transition-colors"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            >
-              {showConfirmPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="isTeacher"
-              checked={isTeacher}
-              onCheckedChange={(c) => setIsTeacher(c as boolean)}
-              className="border-[#9CA3AF] data-[state=checked]:bg-[#3B82F6] data-[state=checked]:border-[#3B82F6]"
-            />
-            <label htmlFor="isTeacher" className="text-[13px] text-[#6B7280]">
-              Register as a teacher
-            </label>
-          </div>
-
-          {error && <p className="text-sm text-red-500">{error}</p>}
-
-          <Button
-            type="submit"
-            className="w-full bg-[#3B82F6] hover:bg-[#3B82F6]/90 text-white h-[40px] font-bold text-[14px] rounded-md mt-2"
-            disabled={loading}
-          >
-            {loading ? "Signing up..." : "CREATE ACCOUNT"}
-          </Button>
-        </form>
-
-        <p className="mt-4 text-center text-[13px] text-[#9CA3AF]">
-          Already have an account?{" "}
-          <Link href="/login" className="text-[#3B82F6] hover:underline font-semibold">
-            Log in
-          </Link>
-        </p>
       </div>
     </div>
   );

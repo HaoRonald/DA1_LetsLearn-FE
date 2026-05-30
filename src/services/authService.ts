@@ -25,4 +25,10 @@ export const authApi = {
   
   refresh: () =>
     axiosInstance.post<{ message: string }>('/auth/refresh'),
+
+  forgotPassword: (email: string) =>
+    axiosInstance.post<{ message: string }>('/auth/forgot-password', { email }),
+
+  resetPassword: (email: string, code: string, newPassword: string) =>
+    axiosInstance.post<{ message: string }>('/auth/reset-password', { email, code, newPassword }),
 };

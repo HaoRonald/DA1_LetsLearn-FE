@@ -20,12 +20,165 @@ import {
   LogOut,
   UserIcon,
   X,
+  Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationDropdown from "./NotificationDropdown";
 import { GlobalChatDrawer } from "@/components/chat/GlobalChatDrawer";
+
+interface BoosterTip {
+  title: string;
+  category: string;
+  summary: string;
+  benefit: string;
+  tip: string;
+}
+
+const CURATED_BOOSTERS: BoosterTip[] = [
+  {
+    title: "Pomodoro Technique",
+    category: "Time Management",
+    summary: "Study for 25 minutes, then take a 5-minute break. Repeat this 4 times, then take a longer 15-30 minute break.",
+    benefit: "Keeps your mind fresh and prevents mental fatigue during intense study sessions.",
+    tip: "Study Hack: Put your phone in another room during focus blocks to avoid distractions."
+  },
+  {
+    title: "Active Recall",
+    category: "Learning Method",
+    summary: "Instead of passively re-reading notes, test your memory by writing down everything you remember, or by doing practice quizzes.",
+    benefit: "Forces your brain to retrieve information, building much stronger neural connections for recall.",
+    tip: "Study Hack: Turn your lecture slides into questions and try to answer them the next day."
+  },
+  {
+    title: "Feynman Technique",
+    category: "Learning Method",
+    summary: "Explain a complex concept in simple terms, as if you were teaching it to a 10-year-old. Identify gaps in your own understanding and review the material.",
+    benefit: "Helps you instantly identify what you truly understand versus what you have just memorized.",
+    tip: "Study Hack: Try explaining the concept aloud to yourself or a friend without using complex jargon."
+  },
+  {
+    title: "Spaced Repetition",
+    category: "Memory Retention",
+    summary: "Review the learned material at systematic intervals (e.g., after 1 day, 3 days, 7 days, and 30 days) instead of cramming everything in one night.",
+    benefit: "Combats the forgetting curve and securely transfers knowledge into your long-term memory.",
+    tip: "Study Hack: Use flashcards or set calendar reminders to schedule review sessions in advance."
+  },
+  {
+    title: "Zeigarnik Effect",
+    category: "Productivity",
+    summary: "Your brain remembers incomplete tasks better than completed ones. Starting a task, even for 5 minutes, makes you much more likely to finish it.",
+    benefit: "Overcomes procrastination by reducing the initial friction of starting a large assignment.",
+    tip: "Study Hack: Tell yourself you will only work on a task for 5 minutes. Usually, you will keep going."
+  }
+];
+
+function AiDailyBooster() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleNext = () => {
+    setIsGenerating(true);
+    setTimeout(() => {
+      setCurrentIndex((prev) => (prev + 1) % CURATED_BOOSTERS.length);
+      setIsGenerating(false);
+    }, 600);
+  };
+
+  const currentBooster = CURATED_BOOSTERS[currentIndex];
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`p-2 rounded-md transition-all duration-300 relative group cursor-pointer ${
+          isOpen 
+            ? "bg-gradient-to-r from-cyan-500/10 to-orange-500/10 text-cyan-600 ring-2 ring-cyan-500/30" 
+            : "hover:bg-gray-155 text-[#6B7280] hover:text-cyan-500"
+        }`}
+        title="AI Study Booster"
+      >
+        <Sparkles className={`w-5 h-5 ${isOpen ? "animate-pulse" : "group-hover:scale-110 transition-transform"}`} />
+        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-gradient-to-r from-cyan-400 to-orange-400 rounded-full border border-white"></span>
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+          <div className="absolute right-0 mt-3 w-80 bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_15px_45px_-10px_rgba(0,0,0,0.25)] border border-gray-100 p-5 z-20 animate-in fade-in slide-in-from-top-3 duration-300">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+              <div className="flex items-center gap-1.5">
+                <div className="p-1 bg-gradient-to-r from-cyan-500 to-orange-500 rounded-lg text-white">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-[14px] font-black text-gray-800 tracking-tight leading-none">AI Study Booster</h4>
+                  <span className="text-[10px] font-bold text-cyan-500 uppercase tracking-widest mt-1 inline-block">Smart study hacks</span>
+                </div>
+              </div>
+              <button 
+                onClick={handleNext}
+                disabled={isGenerating}
+                className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-cyan-500 transition-colors disabled:opacity-50"
+                title="Generate new recommendation"
+              >
+                <RefreshCw className={`w-4 h-4 ${isGenerating ? "animate-spin text-cyan-500" : ""}`} />
+              </button>
+            </div>
+
+            {/* Main Content */}
+            {isGenerating ? (
+              <div className="py-12 flex flex-col items-center justify-center text-center">
+                <RefreshCw className="w-8 h-8 animate-spin text-cyan-500 mb-2" />
+                <p className="text-xs font-semibold text-gray-400 animate-pulse">AI is thinking...</p>
+              </div>
+            ) : (
+              <div className="space-y-4 animate-in fade-in duration-300">
+                {/* Topic & Category */}
+                <div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[16px] font-black text-gray-900 tracking-tight">{currentBooster.title}</span>
+                    <span className="text-[10px] font-bold px-2.5 py-0.5 bg-cyan-50 text-cyan-600 rounded-full uppercase tracking-wider whitespace-nowrap">
+                      {currentBooster.category}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Summary */}
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-1">Method Summary</p>
+                  <p className="text-xs text-gray-700 leading-relaxed font-medium">
+                    {currentBooster.summary}
+                  </p>
+                </div>
+
+                {/* Benefit */}
+                <div className="pl-3 border-l-2 border-orange-400/70">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Key Benefit</p>
+                  <p className="text-xs text-gray-800 leading-relaxed mt-0.5 font-medium">
+                    {currentBooster.benefit}
+                  </p>
+                </div>
+
+                {/* AI Hack Badge */}
+                <div className="bg-gradient-to-r from-cyan-50 to-orange-50 p-3 rounded-xl border border-cyan-100/50">
+                  <p className="text-[11px] text-gray-700 leading-relaxed font-semibold">
+                    {currentBooster.tip}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function MainLayout({
   children,
@@ -208,7 +361,7 @@ export default function MainLayout({
   return (
     <div className="min-h-screen flex flex-col bg-white font-sans text-black">
       {/* --- TOP NAVIGATION BAR --- */}
-      <header className="h-16 border-b border-gray-200 flex items-center justify-between px-4 lg:px-6 bg-white shrink-0 z-10 relative">
+      <header className="h-16 border-b border-gray-200 flex items-center justify-between px-4 lg:px-6 bg-white shrink-0 z-20 relative">
         <div className="flex items-center gap-4">
           {!isHomeActive && (
             <button
@@ -227,7 +380,13 @@ export default function MainLayout({
             <Menu className="w-5 h-5" />
           </button>
           {headerTitle || (
-            <h1 className="text-[16px] font-semibold text-[#374151]">Home</h1>
+            <Link href="/" className="flex items-center transition-opacity hover:opacity-90">
+              <img
+                src="/logo.jpg"
+                alt="Let's learn Logo"
+                className="h-10 w-auto object-contain rounded-lg shadow-sm border border-gray-150"
+              />
+            </Link>
           )}
         </div>
 
@@ -243,6 +402,8 @@ export default function MainLayout({
           <GlobalChatDrawer />
           
           <NotificationDropdown />
+          
+          <AiDailyBooster />
 
           <div className="relative">
             <div
@@ -357,8 +518,8 @@ export default function MainLayout({
           >
             {/* Header / close button for mobile drawer */}
             <div className="flex items-center justify-between px-6 pb-4 border-b border-gray-100 mb-4">
-              <span className="text-[16px] font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                EnglishApp
+              <span className="text-[14px] font-bold text-gray-400 uppercase tracking-widest">
+                Menu
               </span>
               <button
                 onClick={() => setIsMobileSidebarOpen(false)}

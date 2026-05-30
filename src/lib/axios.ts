@@ -29,6 +29,8 @@ axiosInstance.interceptors.response.use(
       error.config?.url?.includes("/auth/login") ||
       error.config?.url?.includes("/auth/signup") ||
       error.config?.url?.includes("/auth/logout") ||
+      error.config?.url?.includes("/auth/forgot-password") ||
+      error.config?.url?.includes("/auth/reset-password") ||
       error.config?.url?.includes("/User/me") ||
       error.config?.url?.includes("/payments");
 
@@ -36,7 +38,8 @@ axiosInstance.interceptors.response.use(
       typeof window !== "undefined" &&
       (
         window.location.pathname === "/login" ||
-        window.location.pathname === "/register"
+        window.location.pathname === "/register" ||
+        window.location.pathname === "/forgot-password"
       );
 
     // Chỉ redirect về login khi 401, không phải auth request,
