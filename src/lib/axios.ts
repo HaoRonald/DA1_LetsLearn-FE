@@ -37,6 +37,7 @@ axiosInstance.interceptors.response.use(
     const isOnPublicPage =
       typeof window !== "undefined" &&
       (
+        window.location.pathname === "/" ||
         window.location.pathname === "/login" ||
         window.location.pathname === "/register" ||
         window.location.pathname === "/forgot-password"

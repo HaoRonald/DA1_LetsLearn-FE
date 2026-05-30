@@ -6,6 +6,8 @@ import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
+import { AITeacherAnimation } from "@/components/auth/AITeacherAnimation";
+import { courseApi } from "@/services/courseService";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -25,7 +27,20 @@ export default function LoginPage() {
       const rawUser = user as { role?: string; Role?: string };
       const role = rawUser.role || rawUser.Role || "Learner";
 
-      let targetPath = "/";
+      // Check for stored course enrollment
+      const enrollCourseId = sessionStorage.getItem("enroll_course_id");
+      if (enrollCourseId) {
+        try {
+          await courseApi.join(enrollCourseId);
+          sessionStorage.removeItem("enroll_course_id");
+          window.location.href = `/courses/${enrollCourseId}`;
+          return;
+        } catch (joinErr) {
+          console.error("Auto-join failed after login:", joinErr);
+        }
+      }
+
+      let targetPath = "/home";
       if (role === "Admin") {
         targetPath = "/admin";
       }
@@ -168,25 +183,10 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* RIGHT COLUMN: BRANDING (CENTERED CONTENT) */}
+        {/* RIGHT COLUMN: AI TEACHER ANIMATION */}
         <div className="hidden md:flex md:w-1/2 flex-col items-center justify-center shrink-0">
-          <div className="max-w-lg text-center flex flex-col items-center">
-            
-            {/* Large Logo */}
-            <img 
-              src="/logo.jpg" 
-              alt="Let's learn Logo" 
-              className="w-52 md:w-64 h-auto rounded-2xl shadow-md mb-8"
-            />
-
-            {/* Slogan */}
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-zinc-900 leading-tight tracking-tight">
-              Connect, collaborate & <br />
-              <span className="text-blue-600">study smarter</span> with AI.
-            </h2>
-            <p className="text-sm font-bold text-zinc-400 tracking-widest mt-4 uppercase">
-              INTELLIGENT CO-STUDY COMPANION
-            </p>
+          <div className="w-full max-w-sm h-[520px]">
+            <AITeacherAnimation />
           </div>
         </div>
 

@@ -8,9 +8,13 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { authApi } from "@/services/authService";
+import { AITeacherAnimation } from "@/components/auth/AITeacherAnimation";
+import { useAuth } from "@/contexts/AuthContext";
+import { courseApi } from "@/services/courseService";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -34,7 +38,29 @@ export default function RegisterPage() {
     try {
       const role = isTeacher ? "Teacher" : "Learner";
       await authApi.register(username, email, password, role);
-      router.push("/login");
+
+      // Auto login
+      try {
+        await login(email, password);
+
+        // Check for stored course enrollment
+        const enrollCourseId = sessionStorage.getItem("enroll_course_id");
+        if (enrollCourseId) {
+          try {
+            await courseApi.join(enrollCourseId);
+            sessionStorage.removeItem("enroll_course_id");
+            window.location.href = `/courses/${enrollCourseId}`;
+            return;
+          } catch (joinErr) {
+            console.error("Auto-join failed after registration login:", joinErr);
+          }
+        }
+
+        window.location.href = "/home";
+      } catch (loginErr) {
+        console.error("Auto-login failed after registration:", loginErr);
+        router.push("/login");
+      }
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -209,25 +235,10 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* RIGHT COLUMN: BRANDING (CENTERED CONTENT) */}
+        {/* RIGHT COLUMN: AI TEACHER ANIMATION */}
         <div className="hidden md:flex md:w-1/2 flex-col items-center justify-center shrink-0">
-          <div className="max-w-lg text-center flex flex-col items-center">
-            
-            {/* Large Logo */}
-            <img 
-              src="/logo.jpg" 
-              alt="Let's learn Logo" 
-              className="w-52 md:w-64 h-auto rounded-2xl shadow-md mb-8"
-            />
-
-            {/* Slogan */}
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-zinc-900 leading-tight tracking-tight">
-              Connect, collaborate & <br />
-              <span className="text-blue-600">study smarter</span> with AI.
-            </h2>
-            <p className="text-sm font-bold text-zinc-400 tracking-widest mt-4 uppercase">
-              INTELLIGENT CO-STUDY COMPANION
-            </p>
+          <div className="w-full max-w-sm h-[520px]">
+            <AITeacherAnimation />
           </div>
         </div>
 

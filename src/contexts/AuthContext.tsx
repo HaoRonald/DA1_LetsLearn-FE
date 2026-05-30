@@ -31,8 +31,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Khởi tạo: lấy thông tin user (Cookie được tự động gửi nhờ withCredentials)
   useEffect(() => {
     const initAuth = async () => {
-      // Không cần check session khi đang ở trang login
-      if (typeof window !== "undefined" && window.location.pathname === "/login") {
+      // Không cần check session khi đang ở trang login/register
+      const publicPaths = ["/login", "/register", "/forgot-password"];
+      if (
+        typeof window !== "undefined" &&
+        publicPaths.some((p) => window.location.pathname.startsWith(p))
+      ) {
         setState({
           user: null,
           token: null,

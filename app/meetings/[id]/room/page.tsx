@@ -10,6 +10,7 @@ import {
   useTracks,
   VideoTrack,
   useDataChannel,
+  isTrackReference,
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import "@livekit/components-styles";
@@ -458,10 +459,19 @@ function RoomContent() {
             className="relative group rounded-[32px] overflow-hidden bg-slate-800 border border-white/5 shadow-lg aspect-video"
           >
             <div className="relative w-full h-full">
-              <VideoTrack
-                trackRef={track}
-                className="w-full h-full object-cover"
-              />
+              {isTrackReference(track) ? (
+                <VideoTrack
+                  trackRef={track}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+                  <div className="w-24 h-24 rounded-full bg-slate-700 flex items-center justify-center text-3xl font-black text-white border-[6px] border-white/10 shadow-2xl">
+                    {track.participant.name?.charAt(0) ||
+                      track.participant.identity.charAt(0)}
+                  </div>
+                </div>
+              )}
               <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
                 <div className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl text-xs font-black text-white border border-white/5">
                   {track.participant.name || track.participant.identity}
