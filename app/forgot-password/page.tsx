@@ -6,6 +6,7 @@ import { Mail, ArrowLeft, CheckCircle2, Lock, Eye, EyeOff, KeyRound } from "luci
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { authApi } from "@/services/authService";
+import { AITeacherAnimation } from "@/components/auth/AITeacherAnimation";
 
 export default function ForgotPasswordPage() {
   const [step, setStep] = useState<1 | 2>(1);
@@ -309,24 +310,10 @@ export default function ForgotPasswordPage() {
           </div>
         </div>
 
-        {/* RIGHT COLUMN: BRANDING */}
+        {/* RIGHT COLUMN: AI TEACHER ANIMATION */}
         <div className="hidden md:flex md:w-1/2 flex-col items-center justify-center shrink-0">
-          <div className="max-w-lg text-center flex flex-col items-center">
-            {/* Large Logo */}
-            <img 
-              src="/logo.jpg" 
-              alt="Let's learn Logo" 
-              className="w-52 md:w-64 h-auto rounded-2xl shadow-md mb-8"
-            />
-
-            {/* Slogan */}
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-zinc-900 leading-tight tracking-tight">
-              Connect, collaborate & <br />
-              <span className="text-blue-600">study smarter</span> with AI.
-            </h2>
-            <p className="text-sm font-bold text-zinc-400 tracking-widest mt-4 uppercase">
-              INTELLIGENT CO-STUDY COMPANION
-            </p>
+          <div className="w-full max-w-sm h-[520px]">
+            <AITeacherAnimation />
           </div>
         </div>
 

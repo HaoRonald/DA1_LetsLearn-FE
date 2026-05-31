@@ -152,6 +152,7 @@ const SAMPLE_COURSES = [
 // ── Components ────────────────────────────────────────────────────────────────
 function NavBar() {
   const [scrolled, setScrolled] = useState(false);
+  const [activeTab, setActiveTab] = useState("features");
   const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
@@ -164,48 +165,55 @@ function NavBar() {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-white/90 backdrop-blur-xl shadow-sm border-b border-gray-100"
-          : "bg-transparent"
+          ? "bg-[#0a0a0a]/95 border-b border-zinc-900/80 shadow-[0_4px_30px_rgba(0,0,0,0.8)]"
+          : "bg-[#0a0a0a]/80 backdrop-blur-md border-b border-zinc-900/40"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <div className="flex items-center gap-2.5">
-          <img
-            src="/logo.jpg"
-            alt="LetsLearn Logo"
-            className="w-8 h-8 rounded-lg object-cover shadow-md"
-          />
-          <span
-            className={`text-[18px] font-black tracking-tight ${scrolled ? "text-gray-900" : "text-white"}`}
-          >
-            Let&apos;s<span className="text-blue-400">Learn</span>
-          </span>
+      <div className="w-full px-8 h-16 flex items-center justify-between">
+        {/* Left Side: Logo + Menu Links grouped together */}
+        <div className="flex items-center gap-5">
+          {/* Logo */}
+          <div className="flex items-center gap-2.5">
+            <img
+              src="/logo.jpg"
+              alt="LetsLearn Logo"
+              className="w-10 h-10 rounded-xl object-cover shadow-md"
+            />
+            <span className="text-[21px] font-black tracking-tight text-white">
+              Let&apos;s<span className="text-blue-400">Learn</span>
+            </span>
+          </div>
+
+          {/* Links (Grouped together with Logo on the left) */}
+          <div className="hidden md:flex items-center gap-1.5">
+            {["Features", "Courses", "Testimonials"].map((item) => {
+              const isTabActive = activeTab === item.toLowerCase();
+              return (
+                <a
+                  key={item}
+                  href={`#${item.toLowerCase()}`}
+                  onClick={() => setActiveTab(item.toLowerCase())}
+                  className={`text-[13px] font-semibold tracking-wide transition-all duration-200 px-4 py-1.5 rounded-lg ${
+                    isTabActive
+                      ? "bg-[#262626] text-white"
+                      : "text-zinc-400 hover:text-white hover:bg-[#262626]/40"
+                  }`}
+                >
+                  {item}
+                </a>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Links */}
-        <div className="hidden md:flex items-center gap-8">
-          {["Features", "Courses", "Testimonials"].map((item) => (
-            <a
-              key={item}
-              href={`#${item.toLowerCase()}`}
-              className={`text-[14px] font-semibold transition-colors hover:text-blue-400 ${
-                scrolled ? "text-gray-600" : "text-white/80"
-              }`}
-            >
-              {item}
-            </a>
-          ))}
-        </div>
-
-        {/* CTA */}
+        {/* Right Side: CTA (Log In, Sign Up) */}
         <div className="flex items-center gap-3">
           {!isLoading && (
             <>
               {isAuthenticated ? (
                 <Link
                   href="/home"
-                  className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[14px] font-bold rounded-xl transition-all shadow-md hover:shadow-lg"
+                  className="flex items-center gap-1.5 px-5 py-2 bg-white hover:bg-zinc-200 text-black text-[13px] font-bold rounded-lg transition-all duration-200 shadow-sm"
                 >
                   Go to Dashboard <ArrowRight className="w-4 h-4" />
                 </Link>
@@ -213,15 +221,13 @@ function NavBar() {
                 <>
                   <Link
                     href="/login"
-                    className={`text-[14px] font-bold transition-colors hover:text-blue-400 ${
-                      scrolled ? "text-gray-700" : "text-white"
-                    }`}
+                    className="text-[13px] font-semibold text-zinc-300 hover:text-white px-5 py-2 rounded-lg border border-zinc-800 hover:bg-[#262626]/30 transition-all duration-200"
                   >
                     Sign In
                   </Link>
                   <Link
                     href="/register"
-                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[14px] font-bold rounded-xl transition-all shadow-md"
+                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-bold rounded-lg transition-all duration-200 shadow-md"
                   >
                     Get Started
                   </Link>
@@ -292,14 +298,16 @@ function HeroSection() {
 
         {/* Trust indicators */}
         <div className="flex flex-wrap items-center justify-center gap-6 text-white/40 text-[13px] font-semibold">
-          {["No credit card required", "Free courses available", "Cancel anytime"].map(
-            (item) => (
-              <span key={item} className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-400" />
-                {item}
-              </span>
-            )
-          )}
+          {[
+            "No credit card required",
+            "Free courses available",
+            "Cancel anytime",
+          ].map((item) => (
+            <span key={item} className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-green-400" />
+              {item}
+            </span>
+          ))}
         </div>
 
         {/* Scroll indicator */}
@@ -344,8 +352,7 @@ function FeaturesSection() {
             Platform Features
           </span>
           <h2 className="text-4xl lg:text-5xl font-black text-gray-900 tracking-tight mb-4">
-            Everything you need to{" "}
-            <span className="text-blue-600">excel</span>
+            Everything you need to <span className="text-blue-600">excel</span>
           </h2>
           <p className="text-gray-500 text-[17px] max-w-xl mx-auto font-medium leading-relaxed">
             Built for modern learners and educators who demand the best tools in
@@ -386,7 +393,8 @@ function CoursesSection() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    courseApi.getAll()
+    courseApi
+      .getAll()
       .then((res) => {
         setCourses(res.data || []);
       })
@@ -440,7 +448,10 @@ function CoursesSection() {
           {/* Grid skeleton */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white rounded-[24px] border border-gray-100 overflow-hidden shadow-sm flex flex-col h-[320px] animate-pulse">
+              <div
+                key={i}
+                className="bg-white rounded-[24px] border border-gray-100 overflow-hidden shadow-sm flex flex-col h-[320px] animate-pulse"
+              >
                 <div className="h-44 bg-zinc-100" />
                 <div className="p-5 flex flex-col flex-1 space-y-3">
                   <div className="h-5 bg-zinc-100 rounded w-5/6" />
@@ -471,7 +482,8 @@ function CoursesSection() {
             Start learning <span className="text-orange-500">today</span>
           </h2>
           <p className="text-gray-500 font-semibold max-w-md mx-auto mt-6 leading-relaxed">
-            No public courses are currently available. Check back soon, or register as a teacher to create the first one!
+            No public courses are currently available. Check back soon, or
+            register as a teacher to create the first one!
           </p>
         </div>
       </section>
@@ -503,7 +515,9 @@ function CoursesSection() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {displayedCourses.slice(0, 8).map((course) => {
             const isFree = !course.price || course.price === 0;
-            const priceText = isFree ? "FREE" : `${course.price.toLocaleString()} VND`;
+            const priceText = isFree
+              ? "FREE"
+              : `${course.price.toLocaleString()} VND`;
 
             return (
               <div

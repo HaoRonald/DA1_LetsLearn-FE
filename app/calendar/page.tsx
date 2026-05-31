@@ -87,17 +87,17 @@ export default function CalendarPage() {
 
   return (
     <MainLayout>
-      <div className="flex flex-col h-full bg-white relative p-6 lg:p-8 overflow-hidden">
+      <div className="flex flex-col min-h-full bg-white relative p-4 sm:p-6 lg:p-8 overflow-y-auto md:overflow-hidden md:h-full">
         
         {/* Calendar Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 relative">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full md:w-auto">
              <h1 className="text-2xl font-black text-slate-900 flex items-center gap-3">
                 <CalendarIcon className="w-8 h-8 text-blue-600" />
                 Schedule
              </h1>
              <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
-                <SelectTrigger className="w-[240px] h-11 border-[#E5E7EB] text-[#374151] rounded-xl bg-white font-bold shadow-sm ring-0 focus:ring-2 focus:ring-blue-500/20 transition-all">
+                <SelectTrigger className="w-full sm:w-[240px] h-11 border-[#E5E7EB] text-[#374151] rounded-xl bg-white font-bold shadow-sm ring-0 focus:ring-2 focus:ring-blue-500/20 transition-all">
                   <SelectValue>
                     {selectedCourseId === 'all' ? 'All courses' : courses.find(c => c.id === selectedCourseId)?.title || 'Loading...'}
                   </SelectValue>
@@ -111,14 +111,14 @@ export default function CalendarPage() {
               </Select>
           </div>
 
-          <div className="flex items-center gap-6 absolute left-1/2 -translate-x-1/2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/50">
+          <div className="flex items-center justify-between sm:justify-start gap-4 md:absolute md:left-1/2 md:-translate-x-1/2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/50 w-full sm:w-auto">
             <button 
               onClick={navigatePrev}
               className="w-10 h-10 flex items-center justify-center text-[#374151] hover:bg-white hover:shadow-sm rounded-xl transition-all"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <span className="text-[14px] font-black text-[#374151] px-4 min-w-[180px] text-center">
+            <span className="text-[13px] sm:text-[14px] font-black text-[#374151] px-2 sm:px-4 min-w-[140px] sm:min-w-[180px] text-center">
               {format(weekDates[0], 'MMM d')} - {format(weekDates[6], 'MMM d, yyyy')}
             </span>
             <button 
@@ -131,16 +131,16 @@ export default function CalendarPage() {
           
           <button 
             onClick={() => setCurrentDate(new Date())}
-            className="px-6 h-11 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-all shadow-sm active:scale-95"
+            className="px-6 h-11 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-all shadow-sm active:scale-95 w-full md:w-auto text-center"
           >
             Today
           </button>
         </div>
 
         {/* Calendar Grid */}
-        <div className="flex-1 min-h-0 border border-slate-200 rounded-[24px] shadow-sm flex bg-white overflow-hidden">
+        <div className="flex-1 min-h-0 border border-slate-200 rounded-[24px] shadow-sm flex flex-col md:flex-row bg-white overflow-y-auto md:overflow-hidden custom-scrollbar">
           {isLoading ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-4 bg-slate-50/50">
+            <div className="flex-1 min-h-[300px] flex flex-col items-center justify-center gap-4 bg-slate-50/50">
                <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
                <p className="font-bold text-slate-500 animate-pulse tracking-widest uppercase text-xs">Syncing Schedule...</p>
             </div>
@@ -154,20 +154,28 @@ export default function CalendarPage() {
               const isToday = isSameDay(date, new Date());
 
               return (
-                <div key={index} className={`flex-1 flex flex-col border-r border-slate-100 last:border-r-0 ${isToday ? 'bg-blue-50/20' : ''}`}>
+                <div key={index} className={`flex flex-col md:flex-1 border-b md:border-b-0 md:border-r border-slate-100 last:border-r-0 last:border-b-0 ${isToday ? 'bg-blue-50/20' : ''}`}>
                   
                   {/* Day Header */}
-                  <div className={`h-24 flex flex-col items-center justify-center border-b border-slate-100 ${isToday ? 'bg-blue-50/50' : ''}`}>
-                    <span className={`text-[11px] font-black mb-2 uppercase tracking-widest ${isToday ? 'text-blue-600' : 'text-slate-400'}`}>
-                      {format(date, 'EEE')}
-                    </span>
-                    <div className={`w-10 h-10 flex items-center justify-center rounded-xl text-[16px] font-black transition-all ${isToday ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-600 bg-slate-100'}`}>
-                      {format(date, 'd')}
+                  <div className={`flex flex-row md:flex-col items-center justify-between md:justify-center border-b border-slate-100 p-4 md:p-0 md:h-24 ${isToday ? 'bg-blue-50/50' : ''}`}>
+                    <div className="flex items-center gap-3 md:flex-col md:gap-1.5">
+                      <span className={`text-[11px] font-black uppercase tracking-widest ${isToday ? 'text-blue-600' : 'text-slate-400'}`}>
+                        {format(date, 'EEE')}
+                      </span>
+                      <div className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-xl text-[14px] md:text-[16px] font-black transition-all ${isToday ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' : 'text-slate-600 bg-slate-100'}`}>
+                        {format(date, 'd')}
+                      </div>
                     </div>
+
+                    {dayTopics.length > 0 && (
+                      <span className="md:hidden text-[10px] font-black bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full">
+                        {dayTopics.length} event{dayTopics.length > 1 ? 's' : ''}
+                      </span>
+                    )}
                   </div>
 
                   {/* Day Content Area */}
-                  <div className="flex-1 relative overflow-y-auto p-3 space-y-3 custom-scrollbar">
+                  <div className="flex-grow p-3 space-y-3 md:overflow-y-auto custom-scrollbar min-h-[50px]">
                     {dayTopics.length > 0 ? (
                       dayTopics.map((topic) => (
                         <div 
@@ -202,8 +210,9 @@ export default function CalendarPage() {
                         </div>
                       ))
                     ) : (
-                      <div className="h-full flex items-center justify-center opacity-10">
-                         <div className="w-full h-px bg-slate-200"></div>
+                      <div className="h-full min-h-[40px] md:min-h-0 flex items-center justify-start md:justify-center opacity-20 py-1 px-1 md:py-0 md:px-0">
+                         <span className="text-[11px] text-slate-400 font-bold block md:hidden">No schedule</span>
+                         <div className="hidden md:block w-full h-px bg-slate-200"></div>
                       </div>
                     )}
                   </div>
