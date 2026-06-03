@@ -74,6 +74,7 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
     path: string;
   } | null>(null);
   const [isNotifying, setIsNotifying] = useState(false);
+  const [topicToDelete, setTopicToDelete] = useState<string | null>(null);
 
   const isPaidCourse = course.price && course.price > 0;
 
@@ -314,6 +315,19 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
     if (!showNotifyModal) return;
     showTopicCreatedToast(showNotifyModal.topicType, showNotifyModal.path);
     setShowNotifyModal(null);
+  };
+
+  const handleDeleteTopic = async () => {
+    if (!topicToDelete) return;
+    try {
+      await topicApi.delete(course.id, topicToDelete);
+      toast.success("Topic deleted successfully!");
+      setTopicToDelete(null);
+      if (onUpdate) onUpdate();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to delete topic");
+    }
   };
 
   const getIcon = (type: string) => {
@@ -559,7 +573,13 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
                             <div className="flex items-center gap-4">
                               {isEditMode ? (
                                 <div className="flex items-center gap-3">
-                                  <button className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg transition-all">
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setTopicToDelete(topic.id);
+                                    }}
+                                    className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg transition-all"
+                                  >
                                     <Trash2 className="w-4 h-4" />
                                   </button>
                                   <button className="text-gray-300 hover:text-gray-600 p-1.5 hover:bg-gray-100 rounded-lg transition-all">
@@ -1331,6 +1351,38 @@ export function CourseTab({ course, onUpdate }: CourseTabProps) {
                  )}
                </button>
              </div>
+          </div>
+        </div>
+      )}
+
+      {topicToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-[24px] w-full max-w-md shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 text-red-600">
+              <div className="p-3 bg-red-50 rounded-xl">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <h2 className="text-[18px] font-black">Delete Topic?</h2>
+            </div>
+            <p className="text-[14px] text-gray-500 leading-relaxed">
+              Are you sure you want to delete this topic? This action cannot be undone and all student submissions will be lost.
+            </p>
+            <div className="flex gap-3 justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setTopicToDelete(null)}
+                className="px-5 py-2.5 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteTopic}
+                className="px-6 py-2.5 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}

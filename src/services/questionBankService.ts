@@ -6,6 +6,7 @@ import type {
   QuestionType,
   QuizQuestion,
   QuizTopicData,
+  QuizTopic,
 } from '@/types/quiz';
 
 // ── Reads ──────────────────────────────────────────────────────────────────────
@@ -146,7 +147,7 @@ export function updateQuizTopicQuestions(input: UpdateQuizTopicInput): Promise<Q
     .update(input.courseId, input.topicId, updatePayload)
     .then((r) => ({
       id: r.data.id,
-      title: r.data.title,
+      title: r.data.title ?? '',
       type: 'quiz',
       sectionId: r.data.sectionId,
       // Need to parse the data field since topicApi.update returns it as raw object/string
