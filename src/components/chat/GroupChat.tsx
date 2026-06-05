@@ -18,8 +18,10 @@ import {
   BrainCircuit,
   CheckCircle2,
   Trophy,
+  Calendar,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { vi } from "date-fns/locale";
 import axiosInstance from "@/lib/axios";
 import {
   downloadFile,
@@ -143,6 +145,65 @@ function renderMarkdown(text: string) {
     );
   });
 }
+
+// ── Date/Time Helpers ─────────────────────────────────────────────────────────
+const isSameDay = (date1Str: string, date2Str: string) => {
+  try {
+    const d1 = new Date(date1Str);
+    const d2 = new Date(date2Str);
+    if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return false;
+    return (
+      d1.getFullYear() === d2.getFullYear() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getDate() === d2.getDate()
+    );
+  } catch {
+    return false;
+  }
+};
+
+const formatDateSeparator = (dateStr: string) => {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "";
+
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    const isToday =
+      d.getFullYear() === today.getFullYear() &&
+      d.getMonth() === today.getMonth() &&
+      d.getDate() === today.getDate();
+
+    const isYesterday =
+      d.getFullYear() === yesterday.getFullYear() &&
+      d.getMonth() === yesterday.getMonth() &&
+      d.getDate() === yesterday.getDate();
+
+    if (isToday) return "Hôm nay";
+    if (isYesterday) return "Hôm qua";
+
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch {
+    return "";
+  }
+};
+
+const formatTime = (dateStr: string) => {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "";
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  } catch {
+    return "";
+  }
+};
 
 // ── Message Bubble ─────────────────────────────────────────────────────────────
 function MessageBubble({
@@ -300,8 +361,13 @@ function MessageBubble({
           </div>
 
           {/* Timestamp */}
-          <span className="text-[10px] text-gray-400 px-1 font-medium">
-            {formatDistanceToNow(new Date(msg.timestamp), { addSuffix: true })}
+          <span 
+            className="text-[10px] text-gray-400 px-1 font-medium select-none"
+            title={new Date(msg.timestamp).toLocaleString("vi-VN")}
+          >
+            {formatTime(msg.timestamp)}
+            {" • "}
+            {formatDistanceToNow(new Date(msg.timestamp), { addSuffix: true, locale: vi })}
           </span>
         </div>
       </div>
@@ -671,21 +737,38 @@ export function GroupChat({
           </div>
         ) : (
           <>
-            {messages.map((msg) => (
-              <MessageBubble
-                key={msg.id}
-                msg={msg}
-                isMine={msg.senderId === currentUserId}
-                generatingQuizForFileId={generatingQuizForFileId}
-                showQuizConfigForMessageId={showQuizConfigForMessageId}
-                setShowQuizConfigForMessageId={setShowQuizConfigForMessageId}
-                bloomLevel={bloomLevel}
-                setBloomLevel={setBloomLevel}
-                questionCount={questionCount}
-                setQuestionCount={setQuestionCount}
-                handleGenerateQuiz={handleGenerateQuiz}
-              />
-            ))}
+            {messages.map((msg, idx) => {
+              const prevMsg = idx > 0 ? messages[idx - 1] : null;
+              const showDateSeparator =
+                !prevMsg || !isSameDay(prevMsg.timestamp, msg.timestamp);
+
+              return (
+                <React.Fragment key={msg.id}>
+                  {showDateSeparator && (
+                    <div className="flex items-center justify-center my-6 py-2 select-none animate-in fade-in slide-in-from-top-1 duration-300">
+                      <div className="flex-1 border-t border-[#E5E7EB] max-w-[15%]"></div>
+                      <div className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white/95 backdrop-blur-md border border-[#E5E7EB] text-[#4B5563] rounded-full text-[11px] font-bold shadow-xs mx-3">
+                        <Calendar className="w-3.5 h-3.5 text-gray-500" />
+                        <span>{formatDateSeparator(msg.timestamp)}</span>
+                      </div>
+                      <div className="flex-1 border-t border-[#E5E7EB] max-w-[15%]"></div>
+                    </div>
+                  )}
+                  <MessageBubble
+                    msg={msg}
+                    isMine={msg.senderId === currentUserId}
+                    generatingQuizForFileId={generatingQuizForFileId}
+                    showQuizConfigForMessageId={showQuizConfigForMessageId}
+                    setShowQuizConfigForMessageId={setShowQuizConfigForMessageId}
+                    bloomLevel={bloomLevel}
+                    setBloomLevel={setBloomLevel}
+                    questionCount={questionCount}
+                    setQuestionCount={setQuestionCount}
+                    handleGenerateQuiz={handleGenerateQuiz}
+                  />
+                </React.Fragment>
+              );
+            })}
 
             {loadingSummary && (
               <div className="flex gap-2.5 items-end animate-pulse mt-2">
