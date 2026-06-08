@@ -205,7 +205,6 @@ export default function AssignmentDetailPage() {
               <TabsContent
                 value="assignment"
                 className="mt-0 outline-none w-full"
-                forceMount
               >
                 <StudentAssignmentView assignment={assignment} courseId={courseId!} />
               </TabsContent>

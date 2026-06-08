@@ -394,7 +394,7 @@ export default function AdminPage() {
                             onKeyDown={(e) => e.key === 'Enter' && loadData('courses')}
                           />
                         </div>
-                        <Select value={coursePublishFilter} onValueChange={(val) => setCoursePublishFilter(val)}>
+                        <Select value={coursePublishFilter} onValueChange={(val) => setCoursePublishFilter(val || "all")}>
                           <SelectTrigger className="w-full md:w-[180px]">
                             <SelectValue placeholder="All Status" />
                           </SelectTrigger>

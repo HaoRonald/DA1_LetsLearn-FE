@@ -380,12 +380,15 @@ export default function MainLayout({
             <Menu className="w-5 h-5" />
           </button>
           {headerTitle || (
-            <Link href="/" className="flex items-center transition-opacity hover:opacity-90">
+            <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90 select-none">
               <img
                 src="/logo.jpg"
                 alt="Let's learn Logo"
-                className="h-10 w-auto object-contain rounded-lg shadow-sm border border-gray-150"
+                className="h-10 w-10 object-cover rounded-xl shadow-sm border border-gray-150"
               />
+              <span className="text-[19px] font-black tracking-tight text-gray-900 hidden sm:inline-block">
+                Let&apos;s<span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent ml-0.5">Learn</span>
+              </span>
             </Link>
           )}
         </div>

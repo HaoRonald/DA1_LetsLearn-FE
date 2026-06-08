@@ -96,7 +96,7 @@ export default function CalendarPage() {
                 <CalendarIcon className="w-8 h-8 text-blue-600" />
                 Schedule
              </h1>
-             <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
+             <Select value={selectedCourseId} onValueChange={(val) => setSelectedCourseId(val || 'all')}>
                 <SelectTrigger className="w-full sm:w-[240px] h-11 border-[#E5E7EB] text-[#374151] rounded-xl bg-white font-bold shadow-sm ring-0 focus:ring-2 focus:ring-blue-500/20 transition-all">
                   <SelectValue>
                     {selectedCourseId === 'all' ? 'All courses' : courses.find(c => c.id === selectedCourseId)?.title || 'Loading...'}
