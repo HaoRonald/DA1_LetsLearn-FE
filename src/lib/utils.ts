@@ -8,6 +8,7 @@ export function cn(...inputs: ClassValue[]) {
 export async function downloadFile(url: string, filename: string) {
   try {
     const response = await fetch(url);
+    if (!response.ok) throw new Error(`Download failed: ${response.status}`);
     const blob = await response.blob();
     const blobUrl = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -20,7 +21,7 @@ export async function downloadFile(url: string, filename: string) {
   } catch (error) {
     console.error('Download error:', error);
     // Fallback: open in new tab if fetch fails
-    window.open(url, '_blank');
+    window.open(url, '_blank', 'noopener,noreferrer');
   }
 }
 

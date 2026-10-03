@@ -1,11 +1,16 @@
 import type { Metadata } from 'next';
 import { Nunito } from 'next/font/google';
+import '@fontsource/be-vietnam-pro/400.css';
+import '@fontsource/be-vietnam-pro/500.css';
+import '@fontsource/be-vietnam-pro/600.css';
+import '@fontsource/be-vietnam-pro/700.css';
+import '@fontsource/be-vietnam-pro/800.css';
 import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
-const nunito = Nunito({ subsets: ['latin'], variable: '--font-sans' });
+const nunito = Nunito({ subsets: ['latin', 'vietnamese'], variable: '--font-nunito', display: 'swap' });
 
 export const metadata: Metadata = {
   title: {

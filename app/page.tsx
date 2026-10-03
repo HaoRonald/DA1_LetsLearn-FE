@@ -708,7 +708,8 @@ export default function LandingPage() {
   // If already logged in, send them straight to the dashboard
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.replace("/home");
+      const searchParams = window.location.search;
+      router.replace(`/home${searchParams}`);
     }
   }, [isAuthenticated, isLoading, router]);
 

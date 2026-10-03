@@ -1,6 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { isAxiosError } from "axios";
+import { ChatSummaryDialog } from "./ChatSummaryDialog";
+import { chatFontFamily } from "./chatTypography";
+import { uploadMedia, uploadError, validateUpload } from "@/lib/mediaUpload";
 import { useGroupChat } from "@/hooks/useGroupChat";
 import type { ChatMessage } from "@/services/chatService";
 import {
@@ -79,72 +83,6 @@ function ConnectionBadge({ status }: { status: string }) {
   );
 }
 
-// ── Helper render Markdown ────────────────────────────────────────────────────
-function renderMarkdown(text: string) {
-  const lines = text.split("\n");
-  return lines.map((line, i) => {
-    if (line.startsWith("# ")) {
-      return (
-        <h1
-          key={i}
-          className="text-xl font-black text-gray-900 mt-4 mb-2 border-b pb-1"
-        >
-          {line.replace("# ", "")}
-        </h1>
-      );
-    }
-    if (line.startsWith("## ")) {
-      return (
-        <h2 key={i} className="text-lg font-bold text-gray-800 mt-3 mb-2">
-          {line.replace("## ", "")}
-        </h2>
-      );
-    }
-    if (line.startsWith("### ")) {
-      return (
-        <h3 key={i} className="text-md font-bold text-indigo-700 mt-2 mb-1">
-          {line.replace("### ", "")}
-        </h3>
-      );
-    }
-    if (line.startsWith("- ")) {
-      const boldParts = line.replace("- ", "").split("**");
-      return (
-        <li
-          key={i}
-          className="ml-4 list-disc text-sm text-gray-700 leading-relaxed py-0.5"
-        >
-          {boldParts.map((part, index) =>
-            index % 2 === 1 ? (
-              <strong key={index} className="font-bold text-gray-900">
-                {part}
-              </strong>
-            ) : (
-              part
-            ),
-          )}
-        </li>
-      );
-    }
-    if (line.trim() === "") {
-      return <div key={i} className="h-2" />;
-    }
-    const boldParts = line.split("**");
-    return (
-      <p key={i} className="text-sm text-gray-700 leading-relaxed mb-2">
-        {boldParts.map((part, index) =>
-          index % 2 === 1 ? (
-            <strong key={index} className="font-bold text-gray-900">
-              {part}
-            </strong>
-          ) : (
-            part
-          ),
-        )}
-      </p>
-    );
-  });
-}
 
 // ── Date/Time Helpers ─────────────────────────────────────────────────────────
 const isSameDay = (date1Str: string, date2Str: string) => {
@@ -242,7 +180,7 @@ function MessageBubble({
       >
         {/* Avatar */}
         {!isMine && (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-[12px] font-black flex-shrink-0 mb-1">
+          <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mb-1 shadow-sm">
             {msg.senderAvatar ? (
               <img
                 src={msg.senderAvatar}
@@ -256,24 +194,24 @@ function MessageBubble({
         )}
 
         <div
-          className={`flex flex-col gap-1 max-w-[75%] min-w-0 ${isMine ? "items-end" : "items-start"}`}
+          className={`flex flex-col gap-1.5 max-w-[85%] min-w-0 sm:max-w-[78%] ${isMine ? "items-end" : "items-start"}`}
         >
           {/* Sender name (chỉ hiện cho tin người khác) */}
           {!isMine && (
-            <span className="text-[11px] font-bold text-gray-500 px-1">
+            <span className="text-xs font-semibold text-slate-600 px-1">
               {msg.senderName}
             </span>
           )}
 
           {/* Bubble */}
           <div
-            className={`px-4 py-2.5 rounded-2xl text-[14px] leading-relaxed break-words shadow-sm max-w-full ${
+            className={`px-4 py-3 rounded-2xl text-[15px] leading-[1.7] break-words shadow-sm max-w-full ${
               isMine
-                ? "bg-gradient-to-br from-[#3B82F6] to-[#2563EB] text-white rounded-br-sm"
-                : "bg-white border border-[#E5E7EB] text-gray-800 rounded-bl-sm"
+                ? "bg-indigo-600 text-white rounded-br-md shadow-indigo-200/60"
+                : "bg-white border border-slate-200 text-slate-800 rounded-bl-md"
             }`}
           >
-            {msg.content && <p>{msg.content}</p>}
+            {msg.content && <p className="whitespace-pre-wrap [overflow-wrap:anywhere]">{msg.content}</p>}
 
             {msg.imageUrl && (
               <div className="mt-2 rounded-lg overflow-hidden border border-gray-100 bg-gray-50">
@@ -362,7 +300,7 @@ function MessageBubble({
 
           {/* Timestamp */}
           <span 
-            className="text-[10px] text-gray-400 px-1 font-medium select-none"
+            className="text-[11px] text-slate-500 px-1 font-medium select-none"
             title={new Date(msg.timestamp).toLocaleString("vi-VN")}
           >
             {formatTime(msg.timestamp)}
@@ -435,7 +373,11 @@ function MessageBubble({
 }
 
 // ── Main Component ─────────────────────────────────────────────────────────────
-export function GroupChat({
+export function GroupChat(props: GroupChatProps) {
+  return <GroupChatSession key={`${props.conversationId}:${props.currentUserId}`} {...props} />;
+}
+
+function GroupChatSession({
   conversationId,
   currentUserId,
   title = "Chat",
@@ -450,7 +392,16 @@ export function GroupChat({
   // AI States
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [summaryText, setSummaryText] = useState("");
+  const [summaryError, setSummaryError] = useState("");
+  const summaryRequestRef = useRef<AbortController | null>(null);
   const [showSummaryModal, setShowSummaryModal] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      summaryRequestRef.current?.abort();
+      summaryRequestRef.current = null;
+    };
+  }, []);
 
   const [generatingQuizForFileId, setGeneratingQuizForFileId] = useState<
     string | null
@@ -494,24 +445,24 @@ export function GroupChat({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const validationError = validateUpload(file);
+    if (validationError) {
+      toast.error(validationError);
+      e.target.value = "";
+      return;
+    }
+
     setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
 
     try {
-      // Gọi endpoint Media upload
-      const res = await axiosInstance.post("/Media/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      const uploadData = res.data.data; // MediaUploadResponse
+      const uploadData = await uploadMedia(file);
       const url =
         type === "image" ? uploadData.displayUrl : uploadData.downloadUrl;
 
       setAttachments((prev) => [...prev, { url, type, name: file.name }]);
     } catch (err) {
       console.error("[chat] Upload error:", err);
-      toast.error("Tải file lên thất bại. Vui lòng thử lại.");
+      toast.error(uploadError(err));
     } finally {
       setUploading(false);
       e.target.value = ""; // Reset input
@@ -557,56 +508,31 @@ export function GroupChat({
 
   // ── AI Handlers ───────────────────────────────────────────────────────────
   const handleSummarize = async () => {
-    if (messages.length < 2) return;
-    requestNotificationPermission();
+    if (messages.length < 2 || summaryRequestRef.current) return;
+    const controller = new AbortController();
+    summaryRequestRef.current = controller;
     setLoadingSummary(true);
-    // Scroll to bottom so the AI thinking indicator is visible
-    setTimeout(() => {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 50);
-
-    const toastId = toast.loading(
-      "Trợ lý AI đang tóm tắt nội dung cuộc trò chuyện. Vui lòng đợi trong giây lát...",
-      {
-        cancel: {
-          label: "Ẩn",
-          onClick: () => {},
-        },
-      },
-    );
+    setSummaryError("");
+    setSummaryText("");
+    setShowSummaryModal(true);
     try {
-      const res = await axiosInstance.post(
-        "/ai/chat/summarize",
-        {
-          conversationId,
-          limit: 50,
-        },
-        {
-          timeout: 60000, // 60s
-        },
-      );
-      setSummaryText(res.data.summary);
-      setShowSummaryModal(true);
-      toast.dismiss(toastId);
-      toast.success("Tóm tắt cuộc trò chuyện hoàn tất!");
-      showNotification(
-        "LetsLearn AI",
-        "Tóm tắt cuộc trò chuyện bằng AI đã hoàn tất!",
-      );
-    } catch (err: any) {
-      console.error("[AI Summarize] error:", err);
-      const errMsg =
-        err.response?.data?.message ||
-        err.message ||
-        "Không thể thực hiện tóm tắt.";
-      toast.dismiss(toastId);
-      toast.error("Lỗi tóm tắt AI: " + errMsg);
-      showNotification(
-        "LetsLearn AI",
-        "Tóm tắt cuộc trò chuyện bằng AI thất bại.",
-      );
+      const res = await axiosInstance.post("/ai/chat/summarize", {
+        conversationId, limit: 50,
+      }, { timeout: 60000, signal: controller.signal });
+      if (typeof res.data.summary !== "string" || !res.data.summary.trim()) {
+        throw new Error("AI chưa trả về nội dung tóm tắt. Vui lòng thử lại.");
+      }
+      if (!controller.signal.aborted) setSummaryText(res.data.summary);
+    } catch (error: unknown) {
+      if (!controller.signal.aborted) {
+        const message = isAxiosError(error)
+          ? error.response?.data?.message || "Không thể tóm tắt lúc này. Vui lòng thử lại."
+          : error instanceof Error ? error.message : "Không thể thực hiện tóm tắt.";
+        setSummaryError(message);
+      }
     } finally {
-      setLoadingSummary(false);
+      if (!controller.signal.aborted) setLoadingSummary(false);
+      if (summaryRequestRef.current === controller) summaryRequestRef.current = null;
     }
   };
 
@@ -659,10 +585,11 @@ export function GroupChat({
         "LetsLearn AI",
         `Sinh câu hỏi ôn tập (Quiz) từ tài liệu "${targetFileName}" thành công!`,
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[AI Quiz] error:", err);
-      const errMsg =
-        err.response?.data?.message || err.message || "Không thể sinh Quiz.";
+      const errMsg = isAxiosError(err)
+        ? err.response?.data?.message || "Không thể sinh Quiz."
+        : err instanceof Error ? err.message : "Không thể sinh Quiz.";
       toast.dismiss(toastId);
       toast.error("Lỗi sinh Quiz AI: " + errMsg);
       showNotification(
@@ -676,16 +603,16 @@ export function GroupChat({
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-full bg-[#F9FAFB] rounded-2xl overflow-hidden border border-[#E5E7EB] shadow-sm relative">
+    <div className="chat-surface flex min-h-0 flex-col h-full bg-[#F5F7FC] rounded-2xl overflow-hidden border border-slate-200 shadow-sm relative antialiased" style={{ fontFamily: chatFontFamily }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 bg-white border-b border-[#E5E7EB]">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-gradient-to-br from-[#3B82F6] to-[#8B5CF6] rounded-xl flex items-center justify-center">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-4 py-4 bg-slate-900 border-b border-slate-800">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="w-10 h-10 bg-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-950/20">
             <MessageCircle className="w-4.5 h-4.5 text-white" />
           </div>
           <div>
-            <h2 className="text-[15px] font-black text-[#1F2937]">{title}</h2>
-            <p className="text-[11px] text-gray-400">
+            <h2 className="text-[15px] font-bold text-white break-words">{title || 'Cuộc trò chuyện'}</h2>
+            <p className="text-xs font-medium text-slate-300">
               {messages.length} tin nhắn
             </p>
           </div>
@@ -693,18 +620,17 @@ export function GroupChat({
         <div className="flex items-center gap-2">
           {messages.length >= 2 && (
             <button
-              onClick={handleSummarize}
-              disabled={loadingSummary}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-500 to-indigo-600 hover:from-violet-600 hover:to-indigo-700 text-white rounded-xl text-[12px] font-bold shadow-md hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+              onClick={() => summaryText || loadingSummary || summaryError ? setShowSummaryModal(true) : handleSummarize()}
+              className="flex items-center gap-1.5 px-3 py-2 bg-indigo-400/20 hover:bg-indigo-400/30 text-white rounded-xl text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-white"
             >
               {loadingSummary ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   Đang tóm tắt...
                 </>
               ) : (
                 <>
-                  <BrainCircuit className="w-3.5 h-3.5 text-white" />
+                  <BrainCircuit className="w-4 h-4" />
                   Tóm tắt AI
                 </>
               )}
@@ -715,7 +641,7 @@ export function GroupChat({
       </div>
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4 scroll-smooth">
+      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5 scroll-smooth">
         {loadingHistory ? (
           <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center gap-3 text-gray-400">
@@ -815,7 +741,7 @@ export function GroupChat({
       </div>
 
       {/* Input area */}
-      <div className="px-4 py-4 bg-white border-t border-[#E5E7EB]">
+      <div className="px-4 py-4 bg-white border-t border-slate-200">
         {/* Preview Attachments */}
         {attachments.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-3">
@@ -900,7 +826,7 @@ export function GroupChat({
             </button>
           </div>
 
-          <div className="flex-1 flex items-center gap-2 bg-[#F3F4F6] rounded-2xl px-4 py-2.5 border border-transparent focus-within:border-[#3B82F6] focus-within:bg-white transition-all shadow-sm">
+          <div className="flex-1 flex items-center gap-2 bg-slate-50 rounded-2xl px-4 py-2.5 border border-slate-200 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:bg-white transition-all">
             <input
               ref={inputRef}
               type="text"
@@ -915,7 +841,7 @@ export function GroupChat({
                     : "Đang kết nối..."
               }
               disabled={status !== "connected" || isSending || uploading}
-              className="flex-1 bg-transparent text-[14px] text-gray-800 outline-none placeholder:text-gray-400 disabled:opacity-50"
+              className="flex-1 min-w-0 bg-transparent text-[15px] leading-6 text-slate-900 outline-none placeholder:text-slate-400 disabled:opacity-50"
             />
             <button
               onClick={handleSend}
@@ -925,7 +851,7 @@ export function GroupChat({
                 status !== "connected" ||
                 uploading
               }
-              className="w-9 h-9 rounded-xl bg-[#3B82F6] text-white flex items-center justify-center hover:bg-[#2563EB] hover:scale-105 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0 shadow-sm"
+              className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0 shadow-sm"
             >
               {isSending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -937,41 +863,15 @@ export function GroupChat({
         </div>
       </div>
 
-      {/* AI Summary Modal (Glassmorphism design) */}
-      {showSummaryModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl w-full max-w-xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4.5 bg-gradient-to-r from-violet-50 to-indigo-50 border-b border-gray-100">
-              <div className="flex items-center gap-2">
-                <BrainCircuit className="w-5 h-5 text-indigo-600 animate-bounce" />
-                <span className="font-black text-[15px] text-gray-900">
-                  Trợ lý AI - Tóm tắt hội thoại
-                </span>
-              </div>
-              <button
-                onClick={() => setShowSummaryModal(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-200 text-gray-500 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 select-text">
-              {renderMarkdown(summaryText)}
-            </div>
-            {/* Footer */}
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
-              <button
-                onClick={() => setShowSummaryModal(false)}
-                className="px-5 py-2 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:from-[#2563EB] hover:to-[#1D4ED8] text-white font-bold rounded-xl text-sm transition-all shadow-md hover:scale-105 active:scale-95"
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ChatSummaryDialog
+        open={showSummaryModal}
+        onOpenChange={setShowSummaryModal}
+        title={title || 'Cuộc trò chuyện'}
+        summary={summaryText}
+        loading={loadingSummary}
+        error={summaryError}
+        onRetry={handleSummarize}
+      />
 
       {/* Quiz Success Modal */}
       {showQuizSuccessModal && quizSuccessData && (

@@ -16,6 +16,7 @@ import { courseApi, CourseResponse } from "@/services/courseService";
 import { chatService, ConversationSummary } from "@/services/chatService";
 import { userService, UserProfile } from "@/services/userService";
 import { GroupChat } from "@/components/chat/GroupChat";
+import { chatFontFamily } from "@/components/chat/chatTypography";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -244,7 +245,7 @@ export function GlobalChatDrawer() {
           />
 
           {/* Drawer panel — highest z-index */}
-          <div className="fixed inset-y-0 right-0 w-[400px] bg-white shadow-2xl z-[9999] flex flex-col animate-in slide-in-from-right duration-300 border-l border-gray-200">
+          <div style={{ fontFamily: chatFontFamily }} className="chat-surface fixed inset-y-0 right-0 w-full max-w-[400px] bg-white shadow-2xl z-[9999] flex flex-col animate-in slide-in-from-right duration-300 border-l border-gray-200">
 
             {/* Header */}
             <div className="h-14 px-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
@@ -478,7 +479,7 @@ export function GlobalChatDrawer() {
                   <GroupChat
                     conversationId={activeView.course.id}
                     currentUserId={user!.id}
-                    title=""
+                    title={activeView.course.title}
                   />
                 </div>
               )}
@@ -494,7 +495,7 @@ export function GlobalChatDrawer() {
                     <GroupChat
                       conversationId={activeView.conversationId}
                       currentUserId={user!.id}
-                      title=""
+                      title={activeView.otherUser.username}
                     />
                   )}
                 </div>

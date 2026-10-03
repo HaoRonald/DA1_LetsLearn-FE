@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   AlertTriangle,
   Check,
@@ -38,7 +44,11 @@ const BLOOM_LEVELS: AiBloomLevel[] = [
   "Create",
 ];
 
-const FINAL_JOB_STATUSES: AiJobStatus[] = ["completed", "needs_review", "failed"];
+const FINAL_JOB_STATUSES: AiJobStatus[] = [
+  "completed",
+  "needs_review",
+  "failed",
+];
 const JOB_FAILED_FALLBACK = "Question generation failed. Please try again.";
 
 type QuestionFilter = "all" | "passed" | "needs_review" | "saved";
@@ -49,7 +59,9 @@ interface Props {
 }
 
 function getApiErrorMessage(error: unknown): string {
-  const err = error as AxiosError<{ message?: string; error?: string } | string>;
+  const err = error as AxiosError<
+    { message?: string; error?: string } | string
+  >;
   const status = err.response?.status;
   const data = err.response?.data;
 
@@ -61,16 +73,25 @@ function getApiErrorMessage(error: unknown): string {
   }
   if (status === 400) {
     if (typeof data === "string") return data;
-    return data?.message || data?.error || "Invalid request. Please check your input.";
+    return (
+      data?.message ||
+      data?.error ||
+      "Invalid request. Please check your input."
+    );
   }
   if (typeof data === "string") return data;
-  return data?.message || data?.error || "Something went wrong. Please try again.";
+  return (
+    data?.message || data?.error || "Something went wrong. Please try again."
+  );
 }
 
 function formatBytes(size: number): string {
   if (!Number.isFinite(size) || size <= 0) return "0 KB";
   const units = ["B", "KB", "MB", "GB"];
-  const index = Math.min(Math.floor(Math.log(size) / Math.log(1024)), units.length - 1);
+  const index = Math.min(
+    Math.floor(Math.log(size) / Math.log(1024)),
+    units.length - 1,
+  );
   return `${(size / 1024 ** index).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
 }
 
@@ -98,17 +119,28 @@ function statusLabel(status: AiJobStatus | null): string {
 }
 
 function statusBadgeClass(status: string): string {
-  if (status === "passed" || status === "completed" || status === "saved_to_bank") {
+  if (
+    status === "passed" ||
+    status === "completed" ||
+    status === "saved_to_bank"
+  ) {
     return "bg-emerald-50 text-emerald-700 border-emerald-200";
   }
-  if (status === "needs_teacher_review" || status === "needs_review" || status === "queued") {
+  if (
+    status === "needs_teacher_review" ||
+    status === "needs_review" ||
+    status === "queued"
+  ) {
     return "bg-amber-50 text-amber-700 border-amber-200";
   }
   if (status === "failed") return "bg-red-50 text-red-700 border-red-200";
   return "bg-slate-50 text-slate-700 border-slate-200";
 }
 
-function getJobFailureMessage(errorMessage?: string | null, message?: string): string {
+function getJobFailureMessage(
+  errorMessage?: string | null,
+  message?: string,
+): string {
   return errorMessage?.trim() || message?.trim() || JOB_FAILED_FALLBACK;
 }
 
@@ -141,7 +173,9 @@ function AiDocumentUpload({
   return (
     <section className="border border-[#E5E7EB] rounded-lg bg-white p-5 space-y-4">
       <div>
-        <h2 className="text-[16px] font-bold text-[#1F2937]">Lecture document</h2>
+        <h2 className="text-[16px] font-bold text-[#1F2937]">
+          Lecture document
+        </h2>
         <p className="text-[13px] text-[#6B7280] mt-1">
           Upload .docx, .pdf, or .txt material for this course.
         </p>
@@ -169,7 +203,9 @@ function AiDocumentUpload({
             <p className="text-[14px] font-bold text-[#374151] break-words">
               {selectedFile.name}
             </p>
-            <p className="text-[12px] text-[#6B7280]">{formatBytes(selectedFile.size)}</p>
+            <p className="text-[12px] text-[#6B7280]">
+              {formatBytes(selectedFile.size)}
+            </p>
           </div>
         </div>
       )}
@@ -179,7 +215,11 @@ function AiDocumentUpload({
         disabled={!selectedFile || uploadLoading}
         className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#2563EB] px-4 py-2.5 text-[14px] font-bold text-white hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {uploadLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+        {uploadLoading ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <Upload className="w-4 h-4" />
+        )}
         Upload
       </button>
 
@@ -224,7 +264,9 @@ function AiGenerationSettings({
   return (
     <section className="border border-[#E5E7EB] rounded-lg bg-white p-5 space-y-4">
       <div>
-        <h2 className="text-[16px] font-bold text-[#1F2937]">Generation settings</h2>
+        <h2 className="text-[16px] font-bold text-[#1F2937]">
+          Generation settings
+        </h2>
         <p className="text-[13px] text-[#6B7280] mt-1">
           Configure the AI draft before starting a job.
         </p>
@@ -232,10 +274,14 @@ function AiGenerationSettings({
 
       <div className="space-y-4">
         <label className="block">
-          <span className="text-[13px] font-bold text-[#374151]">Bloom level</span>
+          <span className="text-[13px] font-bold text-[#374151]">
+            Bloom level
+          </span>
           <select
             value={bloomLevel}
-            onChange={(event) => onBloomLevelChange(event.target.value as AiBloomLevel)}
+            onChange={(event) =>
+              onBloomLevelChange(event.target.value as AiBloomLevel)
+            }
             className="mt-1.5 w-full rounded-lg border border-[#D1D5DB] bg-white px-3 py-2 text-[14px] outline-none focus:border-[#2563EB]"
           >
             {BLOOM_LEVELS.map((level) => (
@@ -247,7 +293,9 @@ function AiGenerationSettings({
         </label>
 
         <label className="block">
-          <span className="text-[13px] font-bold text-[#374151]">Question type</span>
+          <span className="text-[13px] font-bold text-[#374151]">
+            Question type
+          </span>
           <input
             value="MultipleChoice"
             disabled
@@ -257,13 +305,17 @@ function AiGenerationSettings({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <label className="block">
-            <span className="text-[13px] font-bold text-[#374151]">Question count</span>
+            <span className="text-[13px] font-bold text-[#374151]">
+              Question count
+            </span>
             <input
               type="number"
               min={1}
               max={50}
               value={questionCount}
-              onChange={(event) => onQuestionCountChange(Number(event.target.value))}
+              onChange={(event) =>
+                onQuestionCountChange(Number(event.target.value))
+              }
               className="mt-1.5 w-full rounded-lg border border-[#D1D5DB] px-3 py-2 text-[14px] outline-none focus:border-[#2563EB]"
             />
           </label>
@@ -281,7 +333,9 @@ function AiGenerationSettings({
         </div>
 
         <label className="block">
-          <span className="text-[13px] font-bold text-[#374151]">Top K range</span>
+          <span className="text-[13px] font-bold text-[#374151]">
+            Top K range
+          </span>
           <input
             type="range"
             min={1}
@@ -303,7 +357,9 @@ function AiGenerationSettings({
             onChange={(event) => onKnowledgePointChange(event.target.value)}
             placeholder="e.g. khái niệm overfitting, vòng lặp for, định luật Newton..."
             className={`mt-1.5 w-full resize-none rounded-lg border px-3 py-2 text-[14px] leading-5 outline-none focus:border-[#2563EB] ${
-              knowledgePointError ? "border-red-300 bg-red-50" : "border-[#D1D5DB]"
+              knowledgePointError
+                ? "border-red-300 bg-red-50"
+                : "border-[#D1D5DB]"
             }`}
           />
           <div className="mt-1.5 flex items-start justify-between gap-3">
@@ -417,7 +473,11 @@ function AiQuestionApproveToolbar({
         disabled={disabled}
         className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-[14px] font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {approveLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+        {approveLoading ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <Check className="w-4 h-4" />
+        )}
         Approve selected
       </button>
     </div>
@@ -451,17 +511,22 @@ function AiGeneratedQuestionItem({
                 {question.questionName || "Generated question"}
               </h3>
               <p className="text-[12px] text-[#6B7280]">
-                Attempt {question.attempt} · Grounded in {question.groundingRefs?.length ?? 0} chunk(s)
+                Attempt {question.attempt} · Grounded in{" "}
+                {question.groundingRefs?.length ?? 0} chunk(s)
               </p>
             </div>
             <div className="flex flex-wrap gap-2 sm:justify-end">
               <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-[12px] font-bold text-blue-700">
                 {question.bloomLevel}
               </span>
-              <span className={`rounded-full border px-2.5 py-1 text-[12px] font-bold ${scoreBadgeClass(question.score)}`}>
+              <span
+                className={`rounded-full border px-2.5 py-1 text-[12px] font-bold ${scoreBadgeClass(question.score)}`}
+              >
                 {Math.round(question.score * 100)}%
               </span>
-              <span className={`rounded-full border px-2.5 py-1 text-[12px] font-bold ${statusBadgeClass(question.status)}`}>
+              <span
+                className={`rounded-full border px-2.5 py-1 text-[12px] font-bold ${statusBadgeClass(question.status)}`}
+              >
                 {question.status.replaceAll("_", " ")}
               </span>
             </div>
@@ -511,7 +576,9 @@ function AiGeneratedQuestionItem({
 
           {question.feedback && (
             <div className="rounded-lg border border-[#E0E7FF] bg-[#EEF2FF] p-3">
-              <p className="text-[12px] font-bold text-[#4338CA]">AI feedback</p>
+              <p className="text-[12px] font-bold text-[#4338CA]">
+                AI feedback
+              </p>
               <p className="mt-1 text-[13px] leading-5 text-[#374151] break-words">
                 {question.feedback}
               </p>
@@ -573,7 +640,9 @@ function AiGeneratedQuestionList({
       <div className="border-b border-[#E5E7EB] px-5 py-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-[18px] font-bold text-[#1F2937]">Generated questions</h2>
+            <h2 className="text-[18px] font-bold text-[#1F2937]">
+              Generated questions
+            </h2>
             <p className="text-[13px] text-[#6B7280] mt-1">
               Review drafts and save selected items to the question bank.
             </p>
@@ -608,7 +677,9 @@ function AiGeneratedQuestionList({
             </div>
             <select
               value={sort}
-              onChange={(event) => onSortChange(event.target.value as QuestionSort)}
+              onChange={(event) =>
+                onSortChange(event.target.value as QuestionSort)
+              }
               className="rounded-lg border border-[#D1D5DB] bg-white px-3 py-2 text-[13px] outline-none focus:border-[#2563EB]"
             >
               <option value="score">Score high to low</option>
@@ -661,16 +732,21 @@ function AiGeneratedQuestionList({
                 Đang biên soạn câu hỏi bằng AI...
               </h3>
               <p className="text-[13px] text-violet-700 leading-relaxed">
-                Trợ lý AI đang đọc hiểu tài liệu giảng trình, phân tích kiến thức để tự động sinh các câu hỏi trắc nghiệm chất lượng.
+                Trợ lý AI đang đọc hiểu tài liệu giảng trình, phân tích kiến
+                thức để tự động sinh các câu hỏi trắc nghiệm chất lượng.
               </p>
               <p className="text-[12px] text-indigo-500 font-semibold italic">
-                Tiến trình này đang chạy nền (khoảng 1-2 phút). Bạn có thể tiếp tục đợi hoặc quay lại sau.
+                Tiến trình này đang chạy nền (khoảng 1-2 phút). Bạn có thể tiếp
+                tục đợi hoặc quay lại sau.
               </p>
             </div>
           </div>
 
           {[0, 1, 2].map((item) => (
-            <div key={item} className="animate-pulse rounded-lg border border-[#E5E7EB] p-4">
+            <div
+              key={item}
+              className="animate-pulse rounded-lg border border-[#E5E7EB] p-4"
+            >
               <div className="h-4 w-1/3 rounded bg-[#E5E7EB]" />
               <div className="mt-4 h-3 w-full rounded bg-[#E5E7EB]" />
               <div className="mt-2 h-3 w-3/4 rounded bg-[#E5E7EB]" />
@@ -722,12 +798,16 @@ export function AiQuestionGenerationPage({ courseId }: Props) {
   const [questionCount, setQuestionCount] = useState(5);
   const [topK, setTopK] = useState(5);
   const [knowledgePoint, setKnowledgePoint] = useState("");
-  const [jobKnowledgePoint, setJobKnowledgePoint] = useState<string | null>(null);
+  const [jobKnowledgePoint, setJobKnowledgePoint] = useState<string | null>(
+    null,
+  );
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<AiJobStatus | null>(null);
   const [failedMessage, setFailedMessage] = useState<string | null>(null);
   const [questions, setQuestions] = useState<AiGeneratedQuestion[]>([]);
-  const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<string>>(new Set());
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [filter, setFilter] = useState<QuestionFilter>("all");
   const [sort, setSort] = useState<QuestionSort>("score");
   const pollingRef = useRef<number | null>(null);
@@ -826,7 +906,10 @@ export function AiQuestionGenerationPage({ courseId }: Props) {
           }
         }
         if (job.status === "failed") {
-          const failureMessage = getJobFailureMessage(job.errorMessage, job.message);
+          const failureMessage = getJobFailureMessage(
+            job.errorMessage,
+            job.message,
+          );
           if (isMountedRef.current) {
             setFailedMessage(failureMessage);
           }
@@ -839,7 +922,10 @@ export function AiQuestionGenerationPage({ courseId }: Props) {
             toast.error("Question generation failed", {
               description: failureMessage,
             });
-            showNotification("LetsLearn AI", "Sinh câu hỏi trắc nghiệm bằng AI thất bại.");
+            showNotification(
+              "LetsLearn AI",
+              "Sinh câu hỏi trắc nghiệm bằng AI thất bại.",
+            );
           }
         }
         if (job.status === "completed" || job.status === "needs_review") {
@@ -852,7 +938,10 @@ export function AiQuestionGenerationPage({ courseId }: Props) {
             generateToastIdRef.current = null;
           }
           toast.success("Sinh bộ câu hỏi trắc nghiệm bằng AI thành công!");
-          showNotification("LetsLearn AI", "Sinh bộ câu hỏi trắc nghiệm bằng AI thành công!");
+          showNotification(
+            "LetsLearn AI",
+            "Sinh bộ câu hỏi trắc nghiệm bằng AI thành công!",
+          );
         } else if (job.status === "failed") {
           clearPolling();
         }
@@ -860,7 +949,8 @@ export function AiQuestionGenerationPage({ courseId }: Props) {
         // Lỗi mạng tạm thời (timeout, network glitch) → bỏ qua, tiếp tục poll
         const err = error as import("axios").AxiosError;
         const status = err.response?.status;
-        const isNetworkOrTimeout = !status || err.code === "ECONNABORTED" || err.code === "ERR_NETWORK";
+        const isNetworkOrTimeout =
+          !status || err.code === "ECONNABORTED" || err.code === "ERR_NETWORK";
         if (isNetworkOrTimeout) {
           // Không dừng polling — thử lại ở lần poll tiếp theo
           return;
@@ -880,7 +970,10 @@ export function AiQuestionGenerationPage({ courseId }: Props) {
         toast.error("Question generation failed", {
           description: failureMessage,
         });
-        showNotification("LetsLearn AI", "Sinh câu hỏi trắc nghiệm bằng AI thất bại.");
+        showNotification(
+          "LetsLearn AI",
+          "Sinh câu hỏi trắc nghiệm bằng AI thất bại.",
+        );
       }
     },
     [clearPolling, loadQuestions],
@@ -940,12 +1033,15 @@ export function AiQuestionGenerationPage({ courseId }: Props) {
     failedToastJobRef.current = null;
 
     requestNotificationPermission();
-    const toastId = toast.loading("Trợ lý AI đang khởi tạo tiến trình sinh câu hỏi trắc nghiệm từ tài liệu. Vui lòng đợi...", {
-      cancel: {
-        label: "Ẩn",
-        onClick: () => {}
-      }
-    });
+    const toastId = toast.loading(
+      "Trợ lý AI đang khởi tạo tiến trình sinh câu hỏi trắc nghiệm từ tài liệu. Vui lòng đợi...",
+      {
+        cancel: {
+          label: "Ẩn",
+          onClick: () => {},
+        },
+      },
+    );
     generateToastIdRef.current = toastId;
 
     try {
@@ -964,11 +1060,16 @@ export function AiQuestionGenerationPage({ courseId }: Props) {
       setCurrentJobId(job.jobId);
       setJobStatus(job.status);
       setJobKnowledgePoint(
-        "knowledgePoint" in job ? job.knowledgePoint ?? null : payloadKnowledgePoint,
+        "knowledgePoint" in job
+          ? (job.knowledgePoint ?? null)
+          : payloadKnowledgePoint,
       );
       setQuestions(job.questions ?? []);
       if (job.status === "failed") {
-        const failureMessage = getJobFailureMessage(job.errorMessage, job.message);
+        const failureMessage = getJobFailureMessage(
+          job.errorMessage,
+          job.message,
+        );
         setFailedMessage(failureMessage);
         failedToastJobRef.current = job.jobId;
         if (generateToastIdRef.current) {
@@ -1088,7 +1189,9 @@ export function AiQuestionGenerationPage({ courseId }: Props) {
             {resultIntro ? (
               <section className="flex min-h-[520px] flex-col items-center justify-center rounded-lg border border-dashed border-[#CBD5E1] bg-white px-6 text-center">
                 <Sparkles className="w-10 h-10 text-[#CBD5E1] mb-3" />
-                <p className="text-[15px] font-bold text-[#374151]">{resultIntro}</p>
+                <p className="text-[15px] font-bold text-[#374151]">
+                  {resultIntro}
+                </p>
               </section>
             ) : (
               <AiGeneratedQuestionList

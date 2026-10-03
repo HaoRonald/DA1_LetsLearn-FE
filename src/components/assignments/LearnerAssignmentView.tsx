@@ -1,28 +1,36 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { 
-  CornerDownLeft, MoreVertical, Send, UploadCloud, Paperclip, Loader2, CheckCircle2, XCircle
+  Send, UploadCloud, Paperclip, FileArchive, Loader2, CheckCircle2, XCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { commentApi, GetCommentResponse } from '@/services/commentService';
 import { useAuth } from '@/contexts/AuthContext';
 
-import { cn, downloadFile } from '@/lib/utils';
+import { downloadFile } from '@/lib/utils';
 import { TopicResponse } from '@/services/courseService';
-import { assignmentResponseApi, AssignmentResponseDTO } from '@/services/assignmentResponseService';
-import axiosInstance from '@/lib/axios';
+import { assignmentResponseApi, AssignmentResponseDTO, CloudinaryFile } from '@/services/assignmentResponseService';
+import { formatFileSize, isArchive, uploadMedia, uploadError, validateUpload } from '@/lib/mediaUpload';
 
 interface LearnerAssignmentViewProps {
   assignment: TopicResponse;
   courseId: string;
 }
 
-export function StudentAssignmentView({ assignment, courseId }: LearnerAssignmentViewProps) {
+export function StudentAssignmentView(props: LearnerAssignmentViewProps) {
+  return <StudentAssignmentSession key={`${props.courseId}:${props.assignment.id}`} {...props} />;
+}
+
+function StudentAssignmentSession({ assignment, courseId }: LearnerAssignmentViewProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [myResponse, setMyResponse] = useState<AssignmentResponseDTO | null>(null);
   
   // Selection state
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [retainedFiles, setRetainedFiles] = useState<CloudinaryFile[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0, percent: 0 });
+  const uploadedCache = useRef(new Map<File, CloudinaryFile>());
   const [note, setNote] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -35,6 +43,11 @@ export function StudentAssignmentView({ assignment, courseId }: LearnerAssignmen
   const [isFetchingComments, setIsFetchingComments] = useState(true);
 
   const assignmentData = assignment.data || {};
+
+  const fetchComments = useCallback(() => commentApi.getByTopic(courseId, assignment.id)
+    .then(response => setComments(response.data))
+    .catch(error => console.error("Failed to fetch comments:", error))
+    .finally(() => setIsFetchingComments(false)), [courseId, assignment.id]);
 
   useEffect(() => {
     const fetchMySubmission = async () => {
@@ -53,18 +66,7 @@ export function StudentAssignmentView({ assignment, courseId }: LearnerAssignmen
 
     fetchMySubmission();
     fetchComments();
-  }, [assignment.id, courseId]);
-
-  const fetchComments = async () => {
-    try {
-      const response = await commentApi.getByTopic(courseId, assignment.id);
-      setComments(response.data);
-    } catch (error) {
-      console.error("Failed to fetch comments:", error);
-    } finally {
-      setIsFetchingComments(false);
-    }
-  };
+  }, [assignment.id, fetchComments]);
 
   const handleAddComment = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -99,52 +101,76 @@ export function StudentAssignmentView({ assignment, courseId }: LearnerAssignmen
   };
 
   const handleFileClick = () => {
+    if (isSaving) return;
     fileInputRef.current?.click();
   };
 
+  const addFiles = (files: File[]) => {
+    if (isSaving) return;
+    const validFiles = files.filter(file => {
+      const error = validateUpload(file);
+      if (error) toast.error(error);
+      return !error;
+    });
+    setSelectedFiles(previous => [...previous, ...validFiles.filter((file, index) =>
+      ![...previous, ...validFiles.slice(0, index)].some(item =>
+        item.name === file.name && item.size === file.size && item.lastModified === file.lastModified))]);
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setSelectedFiles(Array.from(e.target.files));
-    }
+    if (e.target.files) addFiles(Array.from(e.target.files));
+    e.target.value = '';
+  };
+
+  const startEditing = () => {
+    setRetainedFiles(myResponse?.data.files ?? []);
+    setNote(myResponse?.data.note ?? '');
+    setSelectedFiles([]);
+    uploadedCache.current.clear();
+    setIsSubmitting(true);
   };
 
   const handleSubmit = async () => {
+    if (isSaving) return;
+    if (!selectedFiles.length && !retainedFiles.length) {
+      toast.error('Vui lòng đính kèm ít nhất một file bài làm.');
+      return;
+    }
     setIsSaving(true);
+    setUploadProgress({ completed: 0, total: selectedFiles.length, percent: 0 });
     try {
-      // Upload each file to Cloudinary via our Media API
-      const uploadPromises = selectedFiles.map(async (file) => {
-        const formData = new FormData();
-        formData.append("file", file);
-        const res = await axiosInstance.post("/Media/upload", formData, {
-          headers: { "Content-Type": "multipart/form-data" }
+      const uploadedFiles: CloudinaryFile[] = [];
+      // Keep successful uploads when a later file fails, so retry does not upload them again.
+      for (const [index, file] of selectedFiles.entries()) {
+        const uploaded = uploadedCache.current.get(file) ?? await uploadMedia(file, percent => {
+          setUploadProgress({ completed: index, total: selectedFiles.length, percent });
         });
-        return {
-          name: file.name,
-          displayUrl: res.data.data.displayUrl,
-          downloadUrl: res.data.data.downloadUrl
-        };
-      });
-
-      const uploadedFiles = await Promise.all(uploadPromises);
+        uploadedCache.current.set(file, uploaded);
+        uploadedFiles.push(uploaded);
+        setUploadProgress({ completed: index + 1, total: selectedFiles.length, percent: 0 });
+      }
 
       const payload = {
         topicId: assignment.id,
         submittedAt: new Date().toISOString(),
-        cloudinaryFiles: uploadedFiles,
+        cloudinaryFiles: [...retainedFiles, ...uploadedFiles],
         note: note
       };
 
-      await assignmentResponseApi.create(assignment.id, payload);
+      const saved = myResponse
+        ? await assignmentResponseApi.update(assignment.id, myResponse.id, {
+            topicId: assignment.id,
+            studentId: myResponse.studentId,
+            data: { submittedAt: payload.submittedAt, files: payload.cloudinaryFiles, note },
+          })
+        : await assignmentResponseApi.create(assignment.id, payload);
+      setMyResponse(saved.data);
       toast.success("Assignment submitted successfully!");
-      
-      // Refresh state
-      const refreshed = await assignmentResponseApi.getByTopic(assignment.id);
-      if (Array.isArray(refreshed.data) && refreshed.data.length > 0) {
-        setMyResponse(refreshed.data[0]);
-      }
+      setSelectedFiles([]);
+      uploadedCache.current.clear();
       setIsSubmitting(false);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to submit assignment");
+    } catch (error: unknown) {
+      toast.error(uploadError(error));
     } finally {
       setIsSaving(false);
     }
@@ -182,7 +208,7 @@ export function StudentAssignmentView({ assignment, courseId }: LearnerAssignmen
           <div className="mb-8">
             <h4 className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-3">Additional materials</h4>
             <div className="flex flex-wrap gap-2">
-              {(assignmentData.files || assignmentData.CloudinaryFiles).map((file: any, idx: number) => (
+              {(assignmentData.files || assignmentData.CloudinaryFiles).map((file: CloudinaryFile, idx: number) => (
                 <button 
                   key={idx} 
                   onClick={() => downloadFile(file.downloadUrl || file.displayUrl, file.name)}
@@ -200,10 +226,11 @@ export function StudentAssignmentView({ assignment, courseId }: LearnerAssignmen
           {!isSubmitting ? (
             <>
               <button 
-                onClick={() => setIsSubmitting(true)}
+                onClick={startEditing}
+                disabled={myResponse?.data.mark != null}
                 className="bg-[#06B6D4] hover:bg-[#0891b2] transition-colors text-white text-[14px] font-bold px-4 py-2.5 rounded-lg"
               >
-                {myResponse ? "Edit submission" : "Add submission"}
+                {myResponse?.data.mark != null ? "Bài đã chấm điểm" : myResponse ? "Edit submission" : "Add submission"}
               </button>
             </>
           ) : (
@@ -218,6 +245,7 @@ export function StudentAssignmentView({ assignment, courseId }: LearnerAssignmen
               </button>
               <button 
                 onClick={() => setIsSubmitting(false)}
+                disabled={isSaving}
                 className="bg-white border border-gray-200 text-gray-500 text-[14px] font-bold px-6 py-2.5 rounded-lg"
               >
                 Cancel
@@ -285,35 +313,57 @@ export function StudentAssignmentView({ assignment, courseId }: LearnerAssignmen
               <p className="text-[14px] font-bold text-[#6B7280] md:w-1/4 shrink-0">File submissions</p>
               
               <div className="flex-1 w-full space-y-4">
-                <div 
-                  onClick={handleFileClick}
-                  className="border-2 border-dashed border-[#E5E7EB] rounded-xl hover:border-blue-300 hover:bg-blue-50/30 transition-all cursor-pointer h-64 flex flex-col items-center justify-center p-6 text-center group"
+                <div
+                  onDragOver={e => { e.preventDefault(); if (!isSaving) setIsDragging(true); }}
+                  onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragging(false); }}
+                  onDrop={e => { e.preventDefault(); setIsDragging(false); addFiles(Array.from(e.dataTransfer.files)); }}
+                  className={`border-2 border-dashed rounded-xl transition-colors min-h-56 flex flex-col items-center justify-center p-6 text-center group ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-slate-50/50'} ${isSaving ? 'opacity-60' : ''}`}
                 >
                   <input 
                     type="file" 
                     ref={fileInputRef} 
                     multiple 
+                    disabled={isSaving}
+                    aria-label="Chọn file bài nộp"
                     className="hidden" 
                     onChange={handleFileChange}
                   />
                   <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
                     <UploadCloud className="w-6 h-6 text-[#374151] group-hover:text-blue-500" />
                   </div>
-                  <p className="text-[14px] font-bold text-[#3B82F6] mb-1">Choose files or drag and drop</p>
-                  <p className="text-[12px] text-[#9CA3AF] mb-6">Texts, images, videos, audios and pdfs</p>
-                  <button type="button" className="flex items-center gap-2 bg-[#3B82F6] hover:bg-blue-600 transition-colors text-white px-5 py-2 rounded-lg text-[14px] font-bold shadow-sm">
+                  <p className="text-[15px] font-semibold text-slate-800 mb-2">Kéo thả bài làm vào đây</p>
+                  <p className="text-sm text-slate-600">Hỗ trợ file nén ZIP, RAR, 7z và tài liệu, hình ảnh, video.</p>
+                  <p className="text-xs text-slate-500 mt-1 mb-5">Tối đa 50 MB mỗi file. Có thể chọn nhiều file.</p>
+                  <button type="button" onClick={handleFileClick} disabled={isSaving} className="flex items-center gap-2 bg-[#3B82F6] hover:bg-blue-600 transition-colors text-white px-5 py-2 rounded-lg text-[14px] font-semibold shadow-sm disabled:opacity-50">
                     <Paperclip className="w-4 h-4" />
-                    Attach
+                    Chọn file
                   </button>
                 </div>
+
+                {retainedFiles.map((file, index) => (
+                  <div key={`${file.downloadUrl}-${index}`} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm">
+                    {isArchive(file.name) ? <FileArchive className="h-5 w-5 shrink-0 text-amber-600" /> : <Paperclip className="h-5 w-5 shrink-0 text-blue-600" />}
+                    <span className="min-w-0 flex-1 break-all">{file.name} <span className="text-xs text-slate-500">· Đã nộp</span></span>
+                    <button type="button" disabled={isSaving} aria-label={`Bỏ file ${file.name}`} onClick={() => setRetainedFiles(files => files.filter((_, i) => i !== index))} className="p-1 text-slate-500 hover:text-red-600"><XCircle className="h-4 w-4" /></button>
+                  </div>
+                ))}
+
+                {isSaving && (
+                  <div role="status" className="space-y-2 text-sm text-blue-700">
+                    <p>{uploadProgress.completed < uploadProgress.total ? `Đang tải file ${uploadProgress.completed + 1}/${uploadProgress.total} · ${uploadProgress.percent}%` : 'Đang lưu bài nộp…'}</p>
+                    <progress aria-label="Tiến độ tải file" max={Math.max(1, uploadProgress.total) * 100} value={uploadProgress.completed * 100 + uploadProgress.percent} className="h-2 w-full accent-blue-600" />
+                  </div>
+                )}
 
                 {selectedFiles.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {selectedFiles.map((file, idx) => (
                       <div key={idx} className="flex items-center gap-2 bg-blue-50 text-[#3B82F6] px-3 py-1.5 rounded-lg text-[13px] font-medium border border-blue-100">
-                        <Paperclip className="w-3.5 h-3.5" />
-                        {file.name}
+                        {isArchive(file.name) ? <FileArchive className="w-4 h-4 shrink-0 text-amber-600" /> : <Paperclip className="w-3.5 h-3.5 shrink-0" />}
+                        <span className="break-all">{file.name} <span className="text-xs text-slate-500">({formatFileSize(file.size)})</span></span>
                         <button 
+                          disabled={isSaving}
+                          aria-label={`Bỏ file ${file.name}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
@@ -333,6 +383,7 @@ export function StudentAssignmentView({ assignment, courseId }: LearnerAssignmen
               <label className="text-[14px] font-bold text-[#6B7280] md:w-1/4 shrink-0">Note</label>
               <textarea 
                 value={note}
+                disabled={isSaving}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="Add a note to your teacher..."
                 className="flex-1 border border-[#E5E7EB] rounded-xl px-4 py-3 text-[14px] focus:outline-none focus:border-[#06B6D4]"
