@@ -605,32 +605,33 @@ function GroupChatSession({
   return (
     <div className="chat-surface flex min-h-0 flex-col h-full bg-[#F5F7FC] rounded-2xl overflow-hidden border border-slate-200 shadow-sm relative antialiased" style={{ fontFamily: chatFontFamily }}>
       {/* Header */}
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-4 py-4 bg-slate-900 border-b border-slate-800">
+      {/* Header */}
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-4 py-3.5 bg-white border-b border-slate-100 shadow-sm">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-950/20">
+          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-2xl flex items-center justify-center shadow-md shadow-indigo-200/60 flex-shrink-0">
             <MessageCircle className="w-4.5 h-4.5 text-white" />
           </div>
-          <div>
-            <h2 className="text-[15px] font-bold text-white break-words">{title || 'Cuộc trò chuyện'}</h2>
-            <p className="text-xs font-medium text-slate-300">
+          <div className="min-w-0">
+            <h2 className="text-[14px] font-bold text-slate-800 truncate leading-tight">{title || 'Cuộc trò chuyện'}</h2>
+            <p className="text-[11px] font-medium text-slate-400 leading-tight mt-0.5">
               {messages.length} tin nhắn
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {messages.length >= 2 && (
             <button
               onClick={() => summaryText || loadingSummary || summaryError ? setShowSummaryModal(true) : handleSummarize()}
-              className="flex items-center gap-1.5 px-3 py-2 bg-indigo-400/20 hover:bg-indigo-400/30 text-white rounded-xl text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-white"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 hover:border-indigo-300 rounded-xl text-[11px] font-semibold transition-all focus-visible:outline-2 focus-visible:outline-indigo-500"
             >
               {loadingSummary ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   Đang tóm tắt...
                 </>
               ) : (
                 <>
-                  <BrainCircuit className="w-4 h-4" />
+                  <BrainCircuit className="w-3.5 h-3.5" />
                   Tóm tắt AI
                 </>
               )}
