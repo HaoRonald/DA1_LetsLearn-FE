@@ -4,7 +4,8 @@ import { topicApi } from '@/services/topicService';
 import { mediaApi } from '@/services/mediaService';
 import { downloadFile } from '@/lib/utils';
 import { toast } from 'sonner';
-import { UploadCloud, Paperclip, Loader2, Mail, X, FileIcon, Download } from 'lucide-react';
+import { UploadCloud, Paperclip, Loader2, Mail, X, FileIcon, Download, Plus, Trash2 } from 'lucide-react';
+import { aiAssignmentGradingApi, AssignmentRubric, getAiGradingError } from '@/services/aiAssignmentGradingService';
 
 import { useRouter } from 'next/navigation';
 
@@ -28,18 +29,52 @@ export function TeacherAssignmentSettings({ assignment, courseId, onUpdate, onTa
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // States for files
-  const [existingFiles, setExistingFiles] = useState<CloudinaryFile[]>([]);
+  const [existingFiles, setExistingFiles] = useState<CloudinaryFile[]>(() => assignmentData.files || assignmentData.CloudinaryFiles || []);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   
   const [isSaving, setIsSaving] = useState(false);
   const [isSendingNotification, setIsSendingNotification] = useState(false);
+  const [rubric, setRubric] = useState<AssignmentRubric | null>(null);
+  const [rubricLoading, setRubricLoading] = useState(true);
+  const [rubricSaving, setRubricSaving] = useState(false);
+  const [rubricMaxScore, setRubricMaxScore] = useState('10');
+  const [teacherGuidance, setTeacherGuidance] = useState('');
+  const [criteria, setCriteria] = useState<Array<{ name: string; description: string; maxScore: string }>>([]);
 
-  // Initialize existing files
   useEffect(() => {
-    if (assignmentData.files || assignmentData.CloudinaryFiles) {
-      setExistingFiles(assignmentData.files || assignmentData.CloudinaryFiles || []);
+    let active = true;
+    aiAssignmentGradingApi.getRubric(assignment.id).then(({ data }) => {
+      if (!active) return;
+      setRubric(data);
+      setRubricMaxScore(String(data.maxScore));
+      setTeacherGuidance(data.teacherGuidance ?? '');
+      setCriteria(data.criteria.map(({ name, description, maxScore }) => ({ name, description, maxScore: String(maxScore) })));
+    }).catch((error: unknown) => {
+      const apiError = getAiGradingError(error);
+      if (apiError?.status !== 404) toast.error(apiError?.message || 'Không tải được rubric.');
+    }).finally(() => { if (active) setRubricLoading(false); });
+    return () => { active = false; };
+  }, [assignment.id]);
+
+  const handleSaveRubric = async () => {
+    const maxScore = Number(rubricMaxScore);
+    const normalized = criteria.map((criterion, sortOrder) => ({
+      name: criterion.name.trim(), description: criterion.description.trim(), maxScore: Number(criterion.maxScore), sortOrder,
+    }));
+    if (maxScore !== 10 || normalized.length === 0 || normalized.length > 20 || normalized.some(c => !c.name || c.name.length > 200 || !c.description || c.description.length > 2000 || !Number.isFinite(c.maxScore) || c.maxScore <= 0) ||
+      Math.round(normalized.reduce((sum, c) => sum + c.maxScore, 0) * 100) !== 1000) {
+      toast.error('Rubric cần có từ 1–20 tiêu chí hợp lệ; mô tả bắt buộc và tổng điểm phải bằng 10.');
+      return;
     }
-  }, [assignmentData]);
+    setRubricSaving(true);
+    try {
+      const { data } = await aiAssignmentGradingApi.saveRubric(assignment.id, { maxScore, teacherGuidance: teacherGuidance.trim(), criteria: normalized });
+      setRubric(data);
+      toast.success(`Đã lưu rubric phiên bản ${data.version}.`);
+    } catch (error: unknown) {
+      toast.error(getAiGradingError(error)?.message || 'Không lưu được rubric.');
+    } finally { setRubricSaving(false); }
+  };
 
   // ── Send Email Notification ───────────────────────────────────────
   const handleSendNotification = async () => {
@@ -52,9 +87,9 @@ export function TeacherAssignmentSettings({ assignment, courseId, onUpdate, onTa
           ? `Notification sent to ${count} student${count > 1 ? 's' : ''}!`
           : 'Notification sent! (No enrolled students)',
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Send notification error:', err);
-      toast.error(err.response?.data?.message || 'Failed to send notification');
+      toast.error(getAiGradingError(err)?.message || 'Failed to send notification');
     } finally {
       setIsSendingNotification(false);
     }
@@ -135,9 +170,9 @@ export function TeacherAssignmentSettings({ assignment, courseId, onUpdate, onTa
       toast.success("Settings saved successfully!");
       if (onUpdate) onUpdate();
       router.refresh();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Save error:", error);
-      toast.error(error.response?.data?.message || "Failed to save settings");
+      toast.error(getAiGradingError(error)?.message || "Failed to save settings");
     } finally {
       setIsSaving(false);
     }
@@ -329,6 +364,36 @@ export function TeacherAssignmentSettings({ assignment, courseId, onUpdate, onTa
           </div>
         </div>
       </div>
+
+      <section className="mb-8 rounded-xl border border-indigo-100 bg-indigo-50/40 p-5">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h3 className="font-bold text-gray-800">Rubric chấm bằng AI</h3>
+            <p className="mt-1 text-sm text-gray-500">Thêm từng tiêu chí bằng nút “Thêm tiêu chí”; ô hướng dẫn bên dưới không thay thế danh sách tiêu chí. Tổng điểm tiêu chí phải bằng 10.</p>
+          </div>
+          {rubric && <span className="text-xs font-semibold text-indigo-600">Phiên bản {rubric.version}</span>}
+        </div>
+        {rubricLoading ? <Loader2 className="h-5 w-5 animate-spin text-indigo-500" /> : <div className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-[140px_1fr]">
+            <label className="text-sm font-semibold text-gray-600">Điểm tối đa
+              <input type="number" min="0.1" step="0.1" value={rubricMaxScore} onChange={e => setRubricMaxScore(e.target.value)} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2" />
+            </label>
+            <label className="text-sm font-semibold text-gray-600">Hướng dẫn bổ sung cho AI (không phải tiêu chí)
+              <textarea value={teacherGuidance} onChange={e => setTeacherGuidance(e.target.value)} rows={2} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2" placeholder="Ưu tiên lập luận, độ chính xác..." />
+            </label>
+          </div>
+          {criteria.map((criterion, index) => <div key={index} className="grid gap-2 rounded-lg border border-gray-200 bg-white p-3 md:grid-cols-[1fr_2fr_110px_40px]">
+            <input aria-label={`Tên tiêu chí ${index + 1}`} value={criterion.name} onChange={e => setCriteria(items => items.map((item, i) => i === index ? { ...item, name: e.target.value } : item))} placeholder="Tên tiêu chí" className="rounded border border-gray-200 px-2 py-2 text-sm" />
+            <input aria-label={`Mô tả tiêu chí ${index + 1}`} value={criterion.description} onChange={e => setCriteria(items => items.map((item, i) => i === index ? { ...item, description: e.target.value } : item))} placeholder="Mô tả / yêu cầu đạt" className="rounded border border-gray-200 px-2 py-2 text-sm" />
+            <input aria-label={`Điểm tiêu chí ${index + 1}`} type="number" min="0.1" step="0.1" value={criterion.maxScore} onChange={e => setCriteria(items => items.map((item, i) => i === index ? { ...item, maxScore: e.target.value } : item))} className="rounded border border-gray-200 px-2 py-2 text-sm" />
+            <button type="button" aria-label="Xóa tiêu chí" onClick={() => setCriteria(items => items.filter((_, i) => i !== index))} className="text-red-500"><Trash2 className="mx-auto h-4 w-4" /></button>
+          </div>)}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <button type="button" onClick={() => setCriteria(items => [...items, { name: '', description: '', maxScore: '1' }])} className="inline-flex items-center gap-1 text-sm font-semibold text-indigo-600"><Plus className="h-4 w-4" /> Thêm tiêu chí</button>
+            <button type="button" onClick={handleSaveRubric} disabled={rubricSaving} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">{rubricSaving ? 'Đang lưu...' : rubric ? 'Lưu phiên bản mới' : 'Tạo rubric'}</button>
+          </div>
+        </div>}
+      </section>
 
       {/* Submission types */}
       <div className="mb-8">

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import axios from 'axios';
 import { 
   Send, UploadCloud, Paperclip, FileArchive, Loader2, CheckCircle2, XCircle
 } from 'lucide-react';
@@ -10,6 +11,7 @@ import { downloadFile } from '@/lib/utils';
 import { TopicResponse } from '@/services/courseService';
 import { assignmentResponseApi, AssignmentResponseDTO, CloudinaryFile } from '@/services/assignmentResponseService';
 import { formatFileSize, isArchive, uploadMedia, uploadError, validateUpload } from '@/lib/mediaUpload';
+import { aiAssignmentGradingApi, getAiGradingError, PublishedAssignmentGrade } from '@/services/aiAssignmentGradingService';
 
 interface LearnerAssignmentViewProps {
   assignment: TopicResponse;
@@ -24,6 +26,7 @@ function StudentAssignmentSession({ assignment, courseId }: LearnerAssignmentVie
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [myResponse, setMyResponse] = useState<AssignmentResponseDTO | null>(null);
+  const [publishedGrade, setPublishedGrade] = useState<PublishedAssignmentGrade | null>(null);
   
   // Selection state
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -67,6 +70,18 @@ function StudentAssignmentSession({ assignment, courseId }: LearnerAssignmentVie
     fetchMySubmission();
     fetchComments();
   }, [assignment.id, fetchComments]);
+
+  useEffect(() => {
+    let active = true;
+    if (!myResponse?.id) return;
+    aiAssignmentGradingApi.getPublishedGrade(myResponse.id)
+      .then(({ data }) => { if (active) setPublishedGrade(data); })
+      .catch((error: unknown) => {
+        // A 404 means grading has not been published yet; no draft details are fetched for learners.
+        if (getAiGradingError(error)?.status !== 404) console.error('Failed to fetch published grade:', error);
+      });
+    return () => { active = false; };
+  }, [myResponse?.id]);
 
   const handleAddComment = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -138,6 +153,7 @@ function StudentAssignmentSession({ assignment, courseId }: LearnerAssignmentVie
     }
     setIsSaving(true);
     setUploadProgress({ completed: 0, total: selectedFiles.length, percent: 0 });
+    let creatingSubmission = false;
     try {
       const uploadedFiles: CloudinaryFile[] = [];
       // Keep successful uploads when a later file fails, so retry does not upload them again.
@@ -157,6 +173,7 @@ function StudentAssignmentSession({ assignment, courseId }: LearnerAssignmentVie
         note: note
       };
 
+      creatingSubmission = true;
       const saved = myResponse
         ? await assignmentResponseApi.update(assignment.id, myResponse.id, {
             topicId: assignment.id,
@@ -170,7 +187,12 @@ function StudentAssignmentSession({ assignment, courseId }: LearnerAssignmentVie
       uploadedCache.current.clear();
       setIsSubmitting(false);
     } catch (error: unknown) {
-      toast.error(uploadError(error));
+      if (creatingSubmission && axios.isAxiosError(error) && error.response?.status === 403) {
+        const serverMessage = (error.response.data as { message?: string } | undefined)?.message;
+        toast.error(serverMessage || 'Tài khoản không được phép nộp bài. Hãy kiểm tra role Student/Learner và trạng thái ghi danh khóa học.');
+      } else {
+        toast.error(uploadError(error));
+      }
     } finally {
       setIsSaving(false);
     }
@@ -227,10 +249,10 @@ function StudentAssignmentSession({ assignment, courseId }: LearnerAssignmentVie
             <>
               <button 
                 onClick={startEditing}
-                disabled={myResponse?.data.mark != null}
+                disabled={publishedGrade != null}
                 className="bg-[#06B6D4] hover:bg-[#0891b2] transition-colors text-white text-[14px] font-bold px-4 py-2.5 rounded-lg"
               >
-                {myResponse?.data.mark != null ? "Bài đã chấm điểm" : myResponse ? "Edit submission" : "Add submission"}
+                {publishedGrade != null ? "Bài đã chấm điểm" : myResponse ? "Edit submission" : "Add submission"}
               </button>
             </>
           ) : (
@@ -274,13 +296,17 @@ function StudentAssignmentSession({ assignment, courseId }: LearnerAssignmentVie
             <div className="grid grid-cols-1 md:grid-cols-3 border-b border-[#E5E7EB] bg-[#F9FAFB]">
               <div className="p-4 font-bold text-[14px] text-[#374151] md:border-r md:border-[#E5E7EB]">Grading status</div>
               <div className="p-4 text-[14px] text-[#6B7280] md:col-span-2">
-                {myResponse?.data?.mark != null ? (
-                  <span className="font-bold text-blue-600">Graded: {myResponse.data.mark} / 10</span>
+                {publishedGrade != null ? (
+                  <span className="font-bold text-blue-600">Graded: {publishedGrade.score} / 10</span>
                 ) : (
                   "Not graded"
                 )}
               </div>
             </div>
+            {publishedGrade?.feedback && <div className="grid grid-cols-1 md:grid-cols-3 border-b border-[#E5E7EB] bg-white">
+              <div className="p-4 font-bold text-[14px] text-[#374151] md:border-r md:border-[#E5E7EB]">Teacher feedback</div>
+              <div className="p-4 text-[14px] text-[#6B7280] md:col-span-2 whitespace-pre-wrap">{publishedGrade.feedback}</div>
+            </div>}
             <div className="grid grid-cols-1 md:grid-cols-3 border-b border-[#E5E7EB] bg-white">
               <div className="p-4 font-bold text-[14px] text-[#374151] md:border-r md:border-[#E5E7EB]">Last modified</div>
               <div className="p-4 text-[14px] text-[#6B7280] md:col-span-2">

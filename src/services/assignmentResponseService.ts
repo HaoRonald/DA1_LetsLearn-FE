@@ -11,6 +11,7 @@ export interface AssignmentResponseData {
   files: CloudinaryFile[];
   mark?: number;
   note?: string;
+  teacherFeedback?: string;
 }
 
 export interface AssignmentResponseDTO {
@@ -40,4 +41,7 @@ export const assignmentResponseApi = {
     
   update: (topicId: string, id: string, data: Partial<AssignmentResponseDTO>) =>
     axiosInstance.put<AssignmentResponseDTO>(`/topic/${topicId}/assignment-response/${id}`, data),
+
+  grade: (topicId: string, id: string, data: { mark: number; teacherFeedback?: string }) =>
+    axiosInstance.put<AssignmentResponseDTO>(`/topic/${topicId}/assignment-response/${id}/grade`, data),
 };

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { TopicResponse } from "@/services/courseService";
-import { Filter, Loader2, FileText, CheckCircle2, XCircle, ExternalLink, Download, MessageSquare, Save, User, Clock, Paperclip } from "lucide-react";
+import { Filter, Loader2, FileText, CheckCircle2, XCircle, ExternalLink, Download, MessageSquare, Save, User, Clock, Paperclip, Sparkles, RefreshCw } from "lucide-react";
 import { topicApi } from "@/services/topicService";
 import { downloadFile } from "@/lib/utils";
 import { assignmentResponseApi, AssignmentResponseDTO } from "@/services/assignmentResponseService";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { aiAssignmentGradingApi, AiGradingJob, AssignmentRubric, getAiGradingError } from "@/services/aiAssignmentGradingService";
 
 interface TeacherAssignmentSubmissionsProps {
   assignment: TopicResponse;
@@ -39,6 +40,13 @@ export function TeacherAssignmentSubmissions({
   // Grading form state
   const [gradeValue, setGradeValue] = useState<string>("");
   const [teacherNote, setTeacherNote] = useState<string>("");
+  const [aiJob, setAiJob] = useState<AiGradingJob | null>(null);
+  const [aiRubric, setAiRubric] = useState<AssignmentRubric | null>(null);
+  const [isRequestingAi, setIsRequestingAi] = useState(false);
+  const [isReviewingAi, setIsReviewingAi] = useState(false);
+  const [aiScore, setAiScore] = useState('');
+  const [aiFeedback, setAiFeedback] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
 
   const assignmentData = assignment.data || {};
 
@@ -50,11 +58,11 @@ export function TeacherAssignmentSubmissions({
           assignmentResponseApi.getByTopic(assignment.id)
         ]);
         
-        let reportData = reportResponse.data?.studentMarks || [];
+        const reportData = reportResponse.data?.studentMarks || [];
         const allResponses = allResponsesResponse.data || [];
         
         // Merge missing responseId from allResponses if BE report returns null
-        const mergedData = reportData.map((item: any) => {
+        const mergedData = reportData.map(item => {
           if (item.submitted && !item.responseId) {
             const foundResponse = allResponses.find(r => r.studentId === item.student.id);
             if (foundResponse) {
@@ -64,21 +72,10 @@ export function TeacherAssignmentSubmissions({
           return item;
         });
 
-        // Inject dummy data if list is empty
-        if (mergedData.length === 0) {
-          const dummyData = [
-            { student: { id: 's1', username: 'levantam', email: 'tam@stu.com' }, submitted: true, mark: 9.0, responseId: 'r1' },
-            { student: { id: 's2', username: 'tranthihoa', email: 'hoa@stu.com' }, submitted: true, mark: null, responseId: 'r2' },
-            { student: { id: 's3', username: 'phamhongphuc', email: 'phuc@stu.com' }, submitted: true, mark: 7.5, responseId: 'r3' },
-            { student: { id: 's4', username: 'dangngocanh', email: 'anh@stu.com' }, submitted: false },
-            { student: { id: 's5', username: 'buiminhtuan', email: 'tuan@stu.com' }, submitted: false }
-          ];
-          setSubmissions(dummyData);
-        } else {
-          setSubmissions(mergedData);
-        }
+        setSubmissions(mergedData);
       } catch (error) {
         console.error("Failed to fetch submissions:", error);
+        toast.error('Không tải được danh sách bài nộp. Vui lòng tải lại trang.');
       } finally {
         setIsLoading(false);
       }
@@ -125,13 +122,115 @@ export function TeacherAssignmentSubmissions({
       const response = await assignmentResponseApi.getById(assignment.id, responseId!);
       setFullResponse(response.data);
       setGradeValue(response.data.data.mark?.toString() || "");
-      setTeacherNote(response.data.data.note || "");
+      setTeacherNote(response.data.data.teacherFeedback || "");
+      setAiJob(null);
+      setAiRubric(null);
+      setAiScore('');
+      setAiFeedback('');
+      const [historyResult, rubricResult] = await Promise.allSettled([
+        aiAssignmentGradingApi.getHistory(response.data.id),
+        aiAssignmentGradingApi.getRubric(assignment.id),
+      ]);
+      if (historyResult.status === 'fulfilled') {
+        const latest = historyResult.value.data.items[0];
+        if (latest) {
+          setAiJob(latest);
+          if (latest.draft) {
+            setAiScore(String(latest.draft.finalScore ?? latest.draft.suggestedScore));
+            setAiFeedback(latest.draft.finalFeedback ?? latest.draft.summaryFeedback);
+          }
+        }
+      }
+      if (rubricResult.status === 'fulfilled') setAiRubric(rubricResult.value.data);
     } catch (error) {
       console.error("Failed to fetch full response:", error);
       toast.error("Failed to load submission details");
     } finally {
       setIsFetchingResponse(false);
     }
+  };
+
+  useEffect(() => {
+    if (!aiJob || !['queued', 'processing'].includes(aiJob.status) || !selectedSubmission) return;
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      try {
+        const { data } = await aiAssignmentGradingApi.getJob(aiJob.jobId);
+        if (!active) return;
+        setAiJob(data);
+        if (data.draft) {
+          setAiScore(String(data.draft.suggestedScore));
+          setAiFeedback(data.draft.summaryFeedback);
+        }
+      } catch (error: unknown) {
+        if (!active) return;
+        toast.error(getAiGradingError(error)?.message || 'Không cập nhật được trạng thái chấm AI.');
+      }
+    }, 2000);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [aiJob, selectedSubmission]);
+
+  const handleRefreshAiStatus = async () => {
+    if (!aiJob) return;
+    try {
+      const { data } = await aiAssignmentGradingApi.getJob(aiJob.jobId);
+      setAiJob(data);
+      if (data.draft) {
+        setAiScore(String(data.draft.finalScore ?? data.draft.suggestedScore));
+        setAiFeedback(data.draft.finalFeedback ?? data.draft.summaryFeedback);
+      }
+    } catch (error: unknown) {
+      toast.error(getAiGradingError(error)?.message || 'Không tải lại được trạng thái AI.');
+    }
+  };
+
+  const handleRequestAiGrade = async () => {
+    if (!fullResponse) return;
+    if (!aiRubric) { toast.error('Assignment chưa có rubric. Hãy cấu hình rubric trước.'); return; }
+    setIsRequestingAi(true);
+    try {
+      const { data: accepted } = await aiAssignmentGradingApi.requestJob(fullResponse.id);
+      const { data } = await aiAssignmentGradingApi.getJob(accepted.jobId);
+      setAiJob(data);
+      toast.success('Đã đưa yêu cầu chấm vào hàng đợi.');
+    } catch (error: unknown) {
+      const apiError = getAiGradingError(error);
+      const code = apiError?.code;
+      toast.error(code === 'unsupported_file_type' || code === 'file_type_mismatch'
+        ? 'Định dạng này chưa được AI hỗ trợ (chỉ PDF có văn bản, DOCX, TXT). Bạn có thể chấm thủ công bên dưới.'
+        : apiError?.message || 'Không thể yêu cầu chấm AI.');
+    } finally { setIsRequestingAi(false); }
+  };
+
+  const handlePublishAiGrade = async () => {
+    const draft = aiJob?.draft;
+    const score = Number(aiScore);
+    if (!draft || !Number.isFinite(score) || score < 0 || score > (aiRubric?.maxScore ?? 10)) {
+      toast.error(`Điểm phải nằm trong khoảng 0–${aiRubric?.maxScore ?? 10}.`); return;
+    }
+    setIsReviewingAi(true);
+    try {
+      await aiAssignmentGradingApi.publish(draft.draftId, { finalScore: score, finalFeedback: aiFeedback, expectedReviewVersion: draft.reviewVersion });
+      setSubmissions(prev => prev.map(item => item.student.id === selectedSubmission?.student.id ? { ...item, mark: score } : item));
+      setFullResponse(current => current ? { ...current, data: { ...current.data, mark: score, teacherFeedback: aiFeedback } } : current);
+      setAiJob(current => current ? { ...current, status: 'succeeded', draft: current.draft ? { ...current.draft, reviewStatus: 'published', finalScore: score, finalFeedback: aiFeedback } : null } : current);
+      toast.success('Đã duyệt và công bố điểm cho học viên.');
+    } catch (error: unknown) {
+      toast.error(getAiGradingError(error)?.message || 'Draft đã thay đổi hoặc không thể công bố. Hãy tải lại trạng thái.');
+    } finally { setIsReviewingAi(false); }
+  };
+
+  const handleRejectAiGrade = async () => {
+    const draft = aiJob?.draft;
+    if (!draft) return;
+    setIsReviewingAi(true);
+    try {
+      await aiAssignmentGradingApi.reject(draft.draftId, { reason: rejectionReason, expectedReviewVersion: draft.reviewVersion });
+      setAiJob(current => current ? { ...current, status: 'succeeded', draft: current.draft ? { ...current.draft, reviewStatus: 'rejected', reviewComment: rejectionReason } : null } : current);
+      toast.success('Đã từ chối draft AI. Bạn vẫn có thể chấm thủ công.');
+    } catch (error: unknown) {
+      toast.error(getAiGradingError(error)?.message || 'Không thể từ chối draft. Hãy tải lại trạng thái.');
+    } finally { setIsReviewingAi(false); }
   };
 
   const handleSaveGrade = async () => {
@@ -145,16 +244,7 @@ export function TeacherAssignmentSubmissions({
 
     setIsSavingGrade(true);
     try {
-      const updatedData = {
-        ...fullResponse,
-        data: {
-          ...fullResponse.data,
-          mark: mark,
-          note: teacherNote
-        }
-      };
-      
-      await assignmentResponseApi.update(assignment.id, fullResponse.id, updatedData);
+      await assignmentResponseApi.grade(assignment.id, fullResponse.id, { mark, teacherFeedback: teacherNote });
       
       // Update local state
       setSubmissions(prev => prev.map(s => 
@@ -394,7 +484,7 @@ export function TeacherAssignmentSubmissions({
                           </h4>
                           <div className="relative p-5 bg-blue-50/30 border border-blue-100 rounded-2xl text-[14px] text-gray-700 leading-relaxed italic">
                             <div className="absolute -left-1.5 top-6 w-3 h-3 bg-blue-50/30 border-l border-t border-blue-100 rotate-45" />
-                            "{fullResponse.data.note}"
+                          &quot;{fullResponse.data.note}&quot;
                           </div>
                         </section>
                       )}
@@ -422,7 +512,41 @@ export function TeacherAssignmentSubmissions({
 
                   {/* Right Column: Grading Form */}
                   <div className="md:w-[320px] bg-gray-50/50 p-8 flex flex-col">
-                    <h4 className="text-[14px] font-bold text-gray-900 mb-6">Assign Grade</h4>
+                    <h4 className="text-[14px] font-bold text-gray-900 mb-3">Chấm bài</h4>
+                    <button type="button" onClick={handleRequestAiGrade} disabled={isRequestingAi || !aiRubric || ['queued', 'processing'].includes(aiJob?.status ?? '') || aiJob?.draft?.reviewStatus === 'pending'} className="mb-5 flex w-full items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-3 text-sm font-bold text-indigo-700 disabled:opacity-50">
+                      {isRequestingAi || ['queued', 'processing'].includes(aiJob?.status ?? '') ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      {aiJob?.status === 'queued' ? 'Đang chờ xử lý' : aiJob?.status === 'processing' ? 'AI đang chấm...' : 'Yêu cầu AI chấm'}
+                    </button>
+                    {!aiRubric && <p className="-mt-3 mb-4 text-xs text-amber-700">Chưa có rubric; hãy thêm rubric trong phần cài đặt Assignment.</p>}
+                    {aiJob && <div className="mb-5 rounded-xl border border-gray-200 bg-white p-3 text-sm">
+                      <div className="flex items-center justify-between gap-2 font-semibold text-gray-700"><span>Trạng thái AI: {aiJob.status}</span><button type="button" title="Tải lại trạng thái" onClick={handleRefreshAiStatus} className="text-gray-500"><RefreshCw className="h-4 w-4" /></button></div>
+                      <p className="mt-1 text-xs text-gray-500">Tạo lúc {new Date(aiJob.createdAt).toLocaleString()}{aiJob.completedAt ? ` · Hoàn tất ${new Date(aiJob.completedAt).toLocaleString()}` : ''}</p>
+                      {aiJob.startedAt && aiJob.completedAt && <p className="text-xs text-gray-500">Thời gian xử lý: {Math.max(0, Math.round((new Date(aiJob.completedAt).getTime() - new Date(aiJob.startedAt).getTime()) / 1000))} giây</p>}
+                      {aiJob.errorMessage && <p className="mt-2 text-xs text-red-600">{aiJob.errorMessage}{aiJob.errorCode === 'unsupported_file_type' && ' Chỉ hỗ trợ PDF có văn bản, DOCX và TXT; có thể chấm thủ công bên dưới.'}</p>}
+                      {aiJob.draft && <div className="mt-3 space-y-3 border-t pt-3">
+                        <div className="flex items-center justify-between"><strong>Điểm đề xuất: {aiJob.draft.suggestedScore}/{aiRubric?.maxScore ?? 10}</strong><span className={`text-xs font-semibold ${aiJob.draft.reviewStatus === 'stale' ? 'text-red-600' : 'text-amber-700'}`}>{aiJob.draft.reviewStatus}</span></div>
+                        {aiJob.draft.reviewStatus === 'pending' ? <>
+                          <div className="space-y-2">{aiJob.draft.criterionResults.map(result => {
+                            const criterion = aiRubric?.criteria.find(item => item.id.toLowerCase() === result.criterionId.toLowerCase());
+                            return <div key={result.criterionId} className="rounded-lg bg-gray-50 p-2 text-xs"><p className="font-bold">{criterion?.name ?? 'Tiêu chí'} · {result.score ?? '—'} / {criterion?.maxScore ?? '—'}</p>{result.feedback && <p className="mt-1 text-gray-600">{result.feedback}</p>}{result.evidence?.map((evidence, index) => <p key={index} className="mt-1 border-l-2 border-indigo-300 pl-2 italic text-gray-500">“{evidence.quote}”{evidence.page ? ` (trang ${evidence.page})` : ''}</p>)}</div>;
+                          })}</div>
+                          <p className="text-xs text-gray-600">{aiJob.draft.summaryFeedback}</p>
+                          {aiJob.draft.strengths.length > 0 && <div className="text-xs"><p className="font-semibold text-green-700">Điểm tốt</p><ul className="list-disc pl-4 text-gray-600">{aiJob.draft.strengths.map((item, index) => <li key={index}>{item}</li>)}</ul></div>}
+                          {aiJob.draft.improvements.length > 0 && <div className="text-xs"><p className="font-semibold text-amber-700">Cần cải thiện</p><ul className="list-disc pl-4 text-gray-600">{aiJob.draft.improvements.map((item, index) => <li key={index}>{item}</li>)}</ul></div>}
+                          {aiJob.draft.studySuggestions.length > 0 && <div className="text-xs"><p className="font-semibold text-indigo-700">Gợi ý học tập</p><ul className="list-disc pl-4 text-gray-600">{aiJob.draft.studySuggestions.map((item, index) => <li key={index}>{item}</li>)}</ul></div>}
+                          <label className="block text-xs font-semibold text-gray-600">Điểm cuối
+                            <input type="number" min="0" max={aiRubric?.maxScore ?? 10} step="0.1" value={aiScore} onChange={e => setAiScore(e.target.value)} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+                          </label>
+                          <label className="block text-xs font-semibold text-gray-600">Phản hồi công bố
+                            <textarea rows={3} value={aiFeedback} onChange={e => setAiFeedback(e.target.value)} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+                          </label>
+                          <label className="block text-xs font-semibold text-gray-600">Lý do từ chối (nếu cần)
+                            <input value={rejectionReason} onChange={e => setRejectionReason(e.target.value)} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+                          </label>
+                          <div className="flex gap-2"><button type="button" onClick={handlePublishAiGrade} disabled={isReviewingAi} className="flex-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Duyệt & công bố</button><button type="button" onClick={handleRejectAiGrade} disabled={isReviewingAi} className="rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-600 disabled:opacity-50">Từ chối</button></div>
+                        </> : aiJob.draft.reviewStatus === 'stale' ? <p className="text-xs text-red-600">Bài nộp hoặc rubric đã thay đổi; draft này không thể công bố. Hãy yêu cầu chấm lại.</p> : <p className="text-xs text-gray-500">Draft đã {aiJob.draft.reviewStatus === 'published' ? 'được công bố' : 'bị từ chối'}.</p>}
+                      </div>}
+                    </div>}
                     
                     <div className="space-y-6 flex-1">
                       <div>
@@ -443,7 +567,7 @@ export function TeacherAssignmentSubmissions({
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Private Feedback</label>
+                        <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Feedback to student</label>
                         <textarea 
                           rows={6}
                           value={teacherNote}
