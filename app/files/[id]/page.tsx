@@ -11,6 +11,7 @@ import { Loader2, FileText, ChevronRight, UploadCloud, Paperclip, ArrowLeft } fr
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { downloadFile } from '@/lib/utils';
+import { TopicLearningStatus } from '@/components/courses/TopicLearningStatus';
 
 export default function FileTopicPage() {
   const { id: topicId } = useParams() as { id: string };
@@ -331,6 +332,7 @@ export default function FileTopicPage() {
         {!isTeacher && (
            <div className="px-6 md:px-10 -mt-16 w-full pb-12 relative z-10">
               <div className="bg-white rounded-[12px] shadow-sm border border-[#E5E7EB] p-8 md:p-10 min-h-[500px]">
+                 <TopicLearningStatus topicId={topicId} completionSource="complete_file" />
                  <div className="text-[#374151] text-[15px]">
                     {fileName ? (
                       <p>Click on <a href={fileUrl} target="_blank" className="text-blue-500 hover:underline font-medium">{fileName}</a> to view/download the file uploaded.</p>
