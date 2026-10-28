@@ -10,6 +10,8 @@ import {
   Loader2,
   Trophy,
   TrendingUp,
+  TrendingDown,
+  Minus,
   Clock,
   Zap,
   ChevronRight,
@@ -19,6 +21,10 @@ import {
   ExternalLink,
   Target,
   ArrowUpRight,
+  Activity,
+  Heart,
+  Timer,
+  Flame,
 } from 'lucide-react';
 import {
   learningProgressApi,
@@ -222,35 +228,140 @@ function CircularProgress({ percent }: { percent: number }) {
   const radius = 68;
   const circ = 2 * Math.PI * radius;
   const offset = circ - (percent / 100) * circ;
-
-  // On the project brand blue gradient card, use crisp white or emerald when completed
   const color = percent >= 100 ? '#4ADE80' : '#FFFFFF';
 
   return (
     <svg width="140" height="140" viewBox="0 0 180 180" className="rotate-[-90deg]">
-      {/* Track */}
+      <circle cx="90" cy="90" r={radius} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="14" />
       <circle
-        cx="90"
-        cy="90"
-        r={radius}
-        fill="none"
-        stroke="rgba(255,255,255,0.2)"
-        strokeWidth="14"
-      />
-      {/* Fill */}
-      <circle
-        cx="90"
-        cy="90"
-        r={radius}
-        fill="none"
-        stroke={color}
-        strokeWidth="14"
-        strokeLinecap="round"
-        strokeDasharray={circ}
-        strokeDashoffset={offset}
+        cx="90" cy="90" r={radius} fill="none" stroke={color}
+        strokeWidth="14" strokeLinecap="round"
+        strokeDasharray={circ} strokeDashoffset={offset}
         style={{ transition: 'stroke-dashoffset 1s ease' }}
       />
     </svg>
+  );
+}
+
+// ── Sparkline SVG chart ───────────────────────────────────────────────────────
+function Sparkline({ scores, threshold }: { scores: number[]; threshold?: number }) {
+  if (scores.length < 2) return null;
+  const W = 120, H = 36, pad = 4;
+  const min = Math.min(...scores, threshold ?? 100);
+  const max = Math.max(...scores, threshold ?? 0, min + 1);
+  const range = max - min;
+  const toY = (v: number) => H - pad - ((v - min) / range) * (H - pad * 2);
+  const toX = (i: number) => pad + (i / (scores.length - 1)) * (W - pad * 2);
+  const pts = scores.map((s, i) => `${toX(i)},${toY(s)}`).join(' ');
+  const last = scores[scores.length - 1];
+  const isRising = scores[scores.length - 1] > scores[0];
+  const color = isRising ? '#22c55e' : '#f43f5e';
+
+  return (
+    <svg width={W} height={H} className="overflow-visible">
+      {threshold !== undefined && (
+        <line
+          x1={pad} y1={toY(threshold)} x2={W - pad} y2={toY(threshold)}
+          stroke="#94a3b8" strokeWidth="1" strokeDasharray="3,2"
+        />
+      )}
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      {scores.map((s, i) => (
+        <circle key={i} cx={toX(i)} cy={toY(s)} r={i === scores.length - 1 ? 3.5 : 2}
+          fill={i === scores.length - 1 ? color : '#fff'}
+          stroke={color} strokeWidth="1.5"
+        />
+      ))}
+    </svg>
+  );
+}
+
+// ── Trend badge ───────────────────────────────────────────────────────────────
+function TrendBadge({ trend, delta }: { trend?: string | null; delta?: number | null }) {
+  if (!trend || trend === 'stable') {
+    return delta !== undefined && delta !== null ? (
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500">
+        <Minus className="w-3 h-3" /> Ổn định
+      </span>
+    ) : null;
+  }
+  if (trend === 'improving') return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
+      <TrendingUp className="w-3 h-3" /> Đang cải thiện {delta != null ? `(+${Math.abs(delta).toFixed(1)}%)` : ''}
+    </span>
+  );
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[10px] font-bold border border-rose-200">
+      <TrendingDown className="w-3 h-3" /> Điểm đang giảm {delta != null ? `(${delta.toFixed(1)}%)` : ''}
+    </span>
+  );
+}
+
+// ── Health score gauge ────────────────────────────────────────────────────────
+function HealthGauge({ score }: { score: number }) {
+  const color = score >= 75 ? '#22c55e' : score >= 45 ? '#f59e0b' : '#f43f5e';
+  const label = score >= 75 ? 'Tốt' : score >= 45 ? 'Cần chú ý' : 'Cần cải thiện';
+  const radius = 28;
+  const circ = 2 * Math.PI * radius;
+  const offset = circ - (Math.min(score, 100) / 100) * circ;
+  return (
+    <div className="flex items-center gap-3">
+      <div className="relative">
+        <svg width="68" height="68" viewBox="0 0 68 68" className="rotate-[-90deg]">
+          <circle cx="34" cy="34" r={radius} fill="none" stroke="#f1f5f9" strokeWidth="8" />
+          <circle cx="34" cy="34" r={radius} fill="none" stroke={color} strokeWidth="8"
+            strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset}
+            style={{ transition: 'stroke-dashoffset 0.8s ease' }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-sm font-black" style={{ color }}>{score}</span>
+        </div>
+      </div>
+      <div>
+        <p className="text-xs font-bold" style={{ color }}>{label}</p>
+        <p className="text-[10px] text-slate-400">Sức khỏe học tập</p>
+      </div>
+    </div>
+  );
+}
+
+// ── Section health heatmap ────────────────────────────────────────────────────
+function SectionHeatmap({ sections }: { sections: import('@/services/learningRecommendationService').SectionHealthDto[] }) {
+  if (!sections || sections.length === 0) return null;
+  const colorMap: Record<string, string> = {
+    healthy:     'bg-emerald-100 text-emerald-800 border-emerald-200',
+    at_risk:     'bg-amber-100 text-amber-800 border-amber-200',
+    critical:    'bg-rose-100 text-rose-800 border-rose-200',
+    not_started: 'bg-slate-100 text-slate-500 border-slate-200',
+  };
+  const dotMap: Record<string, string> = {
+    healthy: 'bg-emerald-500', at_risk: 'bg-amber-500',
+    critical: 'bg-rose-500', not_started: 'bg-slate-300',
+  };
+  return (
+    <div className="mb-4 rounded-xl border border-slate-200 bg-white px-4 py-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Sức khỏe theo chương</p>
+      <div className="flex flex-wrap gap-2">
+        {sections.map((s) => (
+          <div
+            key={s.sectionId}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-semibold ${colorMap[s.healthStatus] ?? colorMap.not_started}`}
+            title={`Hoàn thành: ${s.completionPercent}% · Quiz TB: ${s.avgQuizScore != null ? s.avgQuizScore + '%' : 'N/A'} · Điểm: ${s.healthScore}/100`}
+          >
+            <span className={`w-2 h-2 rounded-full shrink-0 ${dotMap[s.healthStatus]}`} />
+            <span className="truncate max-w-[120px]">{s.sectionTitle || `Chương ${s.position}`}</span>
+            <span className="opacity-60">{s.healthScore}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-3 text-[10px] text-slate-400">
+        <span><span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1" />Tốt (≥75)</span>
+        <span><span className="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1" />Cần chú ý (45–74)</span>
+        <span><span className="inline-block w-2 h-2 rounded-full bg-rose-500 mr-1" />Nguy hiểm (&lt;45)</span>
+        <span><span className="inline-block w-2 h-2 rounded-full bg-slate-300 mr-1" />Chưa bắt đầu</span>
+      </div>
+    </div>
   );
 }
 
@@ -526,55 +637,101 @@ export function ProgressTab({ course }: ProgressTabProps) {
         </div>
       </div>
 
+      {/* ── Inactivity Warning Banner ─────────────────────────────────────── */}
+      {!recommendationsLoading && recommendations?.analysis &&
+        recommendations.analysis.inactiveDays >= 3 && (
+        <div className={`flex items-center gap-3 rounded-2xl border px-5 py-3.5 ${
+          recommendations.analysis.inactiveDays >= 7
+            ? 'border-rose-200 bg-rose-50'
+            : 'border-amber-200 bg-amber-50'
+        }`}>
+          <Flame className={`w-5 h-5 shrink-0 ${
+            recommendations.analysis.inactiveDays >= 7 ? 'text-rose-500' : 'text-amber-500'
+          }`} />
+          <p className={`text-sm font-semibold ${
+            recommendations.analysis.inactiveDays >= 7 ? 'text-rose-700' : 'text-amber-700'
+          }`}>
+            {recommendations.analysis.inactiveDays >= 7
+              ? `⚠️ Bạn chưa học trong ${recommendations.analysis.inactiveDays} ngày — kiến thức đang phai nhạt dần!`
+              : `💡 Bạn chưa học trong ${recommendations.analysis.inactiveDays} ngày. Hãy học đều đặn để giữ kiến thức nhé!`
+            }
+          </p>
+        </div>
+      )}
+
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {/* ── Header ──────────────────────────────────────────────────────── */}
         <div className="border-b border-slate-200 px-5 py-5 sm:px-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
-                <BookOpen className="h-5 w-5" />
+                <Activity className="h-5 w-5" />
               </div>
               <div>
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <h3 className="text-lg font-bold tracking-tight text-slate-900">Kết quả phân tích học tập</h3>
-                </div>
+                <h3 className="text-lg font-bold tracking-tight text-slate-900">Kết quả phân tích học tập</h3>
                 <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500">
-                  Hệ thống đã xem tiến độ và kết quả gần đây để gợi ý nội dung phù hợp cho bạn.
+                  Hệ thống phân tích tiến độ, kết quả, xu hướng điểm và suy giảm theo thời gian để gợi ý cá nhân hóa.
                 </p>
               </div>
             </div>
-            {visibleRecommendations.length ? (
-              <div className="inline-flex w-fit items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                <Target className="h-4 w-4 text-indigo-600" />
-                <span><strong className="font-semibold text-slate-900">{visibleRecommendations.length}</strong> gợi ý</span>
-              </div>
-            ) : null}
+            <div className="flex items-center gap-3 flex-wrap justify-end">
+              {!recommendationsLoading && recommendations?.analysis && (
+                <HealthGauge score={recommendations.analysis.overallHealthScore} />
+              )}
+              {visibleRecommendations.length > 0 && (
+                <div className="inline-flex w-fit items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                  <Target className="h-4 w-4 text-indigo-600" />
+                  <span><strong className="font-semibold text-slate-900">{visibleRecommendations.length}</strong> gợi ý</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="bg-slate-50/70 p-4 sm:p-6">
-          {!recommendationsLoading && recommendations?.analysis && (
-            <div className="mb-4 rounded-xl border border-slate-200 bg-white px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Hệ thống đã xem xét</p>
-              {recommendations?.analysis ? (
-                <>
-                  <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-slate-700">
-                    <span><strong className="font-semibold text-slate-900">{recommendations.analysis.topicsInCourse}</strong> nội dung trong khóa học</span>
-                    <span><strong className="font-semibold text-slate-900">{recommendations.analysis.completedTopics}</strong> nội dung bạn đã hoàn thành</span>
-                    <span><strong className="font-semibold text-slate-900">{recommendations.analysis.quizAttemptsReviewed}/{recommendations.analysis.quizAttemptsFound}</strong> lần làm bài kiểm tra được dùng</span>
-                    <span><strong className="font-semibold text-slate-900">{recommendations.analysis.gradedAssignmentsReviewed}/{recommendations.analysis.assignmentSubmissionsFound}</strong> bài tập đã được chấm</span>
-                    <span><strong className="font-semibold text-slate-900">{recommendations.analysis.weakTopicsFound}</strong> nội dung được đề xuất ôn tập</span>
-                  </div>
-                  <p className="mt-2 text-xs leading-relaxed text-slate-500">{recommendations.analysis.method}</p>
-                </>
-              ) : (
-                <p className="mt-2 text-xs leading-relaxed text-slate-500">Chưa có thêm thông tin chi tiết cho các gợi ý lần này.</p>
-              )}
+        <div className="bg-slate-50/70 p-4 sm:p-6 space-y-4">
+
+          {/* ── Key Insights ─────────────────────────────────────────────── */}
+          {!recommendationsLoading && recommendations?.analysis?.keyInsights &&
+            recommendations.analysis.keyInsights.length > 0 && (
+            <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600 mb-2">Điểm nổi bật</p>
+              <ul className="space-y-1">
+                {recommendations.analysis.keyInsights.map((insight, i) => (
+                  <li key={i} className="text-sm text-slate-700 leading-relaxed">{insight}</li>
+                ))}
+              </ul>
             </div>
           )}
+
+          {/* ── Analysis stats ───────────────────────────────────────────── */}
+          {!recommendationsLoading && recommendations?.analysis && (
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Hệ thống đã xem xét</p>
+              <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-slate-700">
+                <span><strong className="font-semibold text-slate-900">{recommendations.analysis.topicsInCourse}</strong> nội dung trong khóa</span>
+                <span><strong className="font-semibold text-slate-900">{recommendations.analysis.completedTopics}</strong> đã hoàn thành</span>
+                <span><strong className="font-semibold text-slate-900">{recommendations.analysis.quizAttemptsReviewed}/{recommendations.analysis.quizAttemptsFound}</strong> lần làm quiz được dùng</span>
+                <span><strong className="font-semibold text-slate-900">{recommendations.analysis.gradedAssignmentsReviewed}/{recommendations.analysis.assignmentSubmissionsFound}</strong> bài tập đã chấm</span>
+                <span><strong className="font-semibold text-slate-900">{recommendations.analysis.weakTopicsFound}</strong> nội dung yếu</span>
+                {recommendations.analysis.stuckTopicsCount > 0 && (
+                  <span className="text-rose-600 font-semibold">{recommendations.analysis.stuckTopicsCount} nội dung đang bị bỏ dở</span>
+                )}
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-slate-400">{recommendations.analysis.method}</p>
+            </div>
+          )}
+
+          {/* ── Section Health Heatmap ───────────────────────────────────── */}
+          {!recommendationsLoading && recommendations?.analysis?.sectionHealthItems &&
+            recommendations.analysis.sectionHealthItems.length > 0 && (
+            <SectionHeatmap sections={recommendations.analysis.sectionHealthItems} />
+          )}
+
+          {/* ── Recommendation cards ─────────────────────────────────────── */}
           {recommendationsLoading ? (
             <div className="grid gap-3 md:grid-cols-2">
-              {[0, 1].map((item) => (
-                <div key={item} className="h-28 animate-pulse rounded-2xl border border-white bg-white/80" />
+              {[0, 1].map((i) => (
+                <div key={i} className="h-28 animate-pulse rounded-2xl border border-white bg-white/80" />
               ))}
             </div>
           ) : visibleRecommendations.length ? (
@@ -582,49 +739,106 @@ export function ProgressTab({ course }: ProgressTabProps) {
               {visibleRecommendations.map((item) => {
                 const href = getTopicHref(item.topicType, item.topicId, course.id);
                 const hasScore = item.scorePercent != null;
+                const isStuck = item.isStuck === true;
+                const isDeclining = item.trend === 'declining';
+                const sparklineScores = item.recentResults?.map(r => r.scorePercent) ?? [];
+
+                const cardBorder = isStuck
+                  ? 'border-amber-200 bg-amber-50/30'
+                  : isDeclining
+                    ? 'border-rose-200 bg-rose-50/20'
+                    : item.priority === 'high'
+                      ? 'border-rose-100'
+                      : 'border-slate-200 bg-white';
+
                 return (
                   <article
                     key={`${item.topicId}-${item.evidenceLabel}`}
-                    className="flex min-w-0 flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300 sm:p-5"
+                    className={`flex min-w-0 flex-col justify-between rounded-xl border p-4 transition-all hover:shadow-md sm:p-5 ${cardBorder}`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${item.priority === 'high' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-600'}`}>
-                        <BookOpen className="h-4 w-4" />
+                      <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                        isStuck ? 'bg-amber-100 text-amber-600'
+                        : item.priority === 'high' ? 'bg-rose-50 text-rose-600'
+                        : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {isStuck ? <Timer className="h-4 w-4" /> : <BookOpen className="h-4 w-4" />}
                       </div>
+
                       <div className="min-w-0 flex-1">
+                        {/* Title row */}
                         <div className="flex flex-wrap items-center gap-2">
                           <h4 className="line-clamp-2 text-sm font-bold leading-snug text-slate-900">{item.title}</h4>
                           <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">{topicTypeLabel(item.topicType)}</span>
-                          {item.priority === 'high' && (
+                          {isStuck && (
+                            <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">⏸ Bị bỏ dở</span>
+                          )}
+                          {item.priority === 'high' && !isStuck && (
                             <span className="rounded bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700">Cần ôn tập</span>
                           )}
                         </div>
+
+                        {/* Trend badge */}
+                        {item.trend && (
+                          <div className="mt-1.5">
+                            <TrendBadge trend={item.trend} delta={item.trendDelta} />
+                          </div>
+                        )}
+
                         <p className="mt-1.5 text-xs leading-relaxed text-slate-600">{item.reason}</p>
+
+                        {/* Score section với sparkline */}
                         {hasScore && (
                           <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                            <div className="mb-2 flex items-center justify-between gap-2 text-[11px] font-semibold">
-                              <span className="text-slate-600">Điểm tổng hợp gần đây</span>
-                              <span className="text-rose-600">{Math.round(Number(item.scorePercent))}%</span>
-                            </div>
-                            <div className="relative h-2 overflow-visible rounded-full bg-slate-200">
-                              <div
-                                className={`h-full rounded-full ${Number(item.scorePercent) < Number(item.passThresholdPercent ?? 60) ? 'bg-rose-500' : 'bg-amber-500'}`}
-                                style={{ width: `${Math.max(2, Math.min(100, Number(item.scorePercent)))}%` }}
-                              />
-                              {item.passThresholdPercent != null && (
-                                <span
-                                  className="absolute -top-0.5 h-3 w-0.5 bg-slate-700"
-                                  style={{ left: `${Math.min(100, Number(item.passThresholdPercent))}%` }}
-                                  title={`Ngưỡng đạt ${item.passThresholdPercent}%`}
-                                />
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1">
+                                <div className="mb-2 flex items-center justify-between gap-2 text-[11px] font-semibold">
+                                  <span className="text-slate-600">Điểm gốc (weighted)</span>
+                                  <span className="text-rose-600">{Math.round(Number(item.scorePercent))}%</span>
+                                </div>
+                                <div className="relative h-2 overflow-visible rounded-full bg-slate-200">
+                                  <div
+                                    className={`h-full rounded-full ${
+                                      Number(item.scorePercent) < Number(item.passThresholdPercent ?? 60)
+                                        ? 'bg-rose-500' : 'bg-amber-500'
+                                    }`}
+                                    style={{ width: `${Math.max(2, Math.min(100, Number(item.scorePercent)))}%` }}
+                                  />
+                                  {item.passThresholdPercent != null && (
+                                    <span
+                                      className="absolute -top-0.5 h-3 w-0.5 bg-slate-700"
+                                      style={{ left: `${Math.min(100, Number(item.passThresholdPercent))}%` }}
+                                      title={`Ngưỡng ${item.passThresholdPercent}%`}
+                                    />
+                                  )}
+                                </div>
+                                {/* Decay adjusted score */}
+                                {item.decayAdjustedScore != null && (
+                                  <div className="mt-2 text-[10px] text-slate-500 flex items-center gap-1.5">
+                                    <span>Sau decay ({((item.decayFactor ?? 1) * 100).toFixed(0)}%):</span>
+                                    <span className="font-semibold text-slate-700">{Math.round(item.decayAdjustedScore)}%</span>
+                                    {item.daysSinceLastAccess != null && item.daysSinceLastAccess > 0 && (
+                                      <span className="text-slate-400">· {item.daysSinceLastAccess} ngày trước</span>
+                                    )}
+                                  </div>
+                                )}
+                                <div className="mt-1 flex flex-wrap gap-x-3 text-[10px] text-slate-400">
+                                  {item.attemptCount != null && <span>{item.attemptCount} lần được dùng</span>}
+                                  {item.passThresholdPercent != null && <span>Mốc: {item.passThresholdPercent}%</span>}
+                                </div>
+                              </div>
+                              {/* Sparkline */}
+                              {sparklineScores.length >= 2 && (
+                                <div className="shrink-0 pt-1">
+                                  <Sparkline scores={sparklineScores} threshold={item.passThresholdPercent ?? undefined} />
+                                  <p className="mt-0.5 text-center text-[9px] text-slate-400">Xu hướng điểm</p>
+                                </div>
                               )}
-                            </div>
-                            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500">
-                              {item.attemptCount != null && <span>{item.attemptCount} lần làm được dùng</span>}
-                              {item.passThresholdPercent != null && <span>Mốc cần đạt: {item.passThresholdPercent}%</span>}
                             </div>
                           </div>
                         )}
+
+                        {/* Evidence panel */}
                         <div className="mt-3 rounded-lg border border-slate-200 px-3 py-2.5">
                           <p className="text-xs font-semibold text-slate-700">Vì sao nội dung này được gợi ý</p>
                           <p className="mt-1 text-xs leading-relaxed text-slate-600">{item.analysisBasis || item.evidenceLabel}</p>
@@ -632,30 +846,37 @@ export function ProgressTab({ course }: ProgressTabProps) {
                           {item.lastAccessedAtUtc && <p className="mt-1 text-[11px] text-slate-500">Truy cập gần nhất: {fmt(item.lastAccessedAtUtc)}</p>}
                           {item.recentResults && item.recentResults.length > 0 && (
                             <div className="mt-2 border-t border-slate-100 pt-2">
-                            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Các lần làm được dùng</p>
+                              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Các lần làm được dùng</p>
                               <div className="space-y-1">
-                                {item.recentResults.map((result, resultIndex) => (
-                                  <div key={`${item.topicId}-result-${resultIndex}`} className="flex items-center justify-between gap-3 text-[11px] text-slate-600">
-                                    <span>{result.recordedAtUtc ? fmt(result.recordedAtUtc) : `Lần ${resultIndex + 1}`}</span>
-                                    <span className="font-medium text-slate-800">{result.scorePercent}%{result.earnedMark != null && result.maximumMark != null ? ` · ${result.earnedMark}/${result.maximumMark} điểm` : ''}</span>
+                                {item.recentResults.map((result, ri) => (
+                                  <div key={`${item.topicId}-r-${ri}`} className="flex items-center justify-between gap-3 text-[11px] text-slate-600">
+                                    <span>{result.recordedAtUtc ? fmt(result.recordedAtUtc) : `Lần ${ri + 1}`}</span>
+                                    <span className="font-medium text-slate-800">
+                                      {result.scorePercent}%
+                                      {result.earnedMark != null && result.maximumMark != null
+                                        ? ` · ${result.earnedMark}/${result.maximumMark} điểm` : ''}
+                                    </span>
                                   </div>
                                 ))}
                               </div>
                             </div>
                           )}
                           {!item.recentResults?.length && item.observedProgressStatus && (
-                            <p className="mt-1 text-[11px] text-slate-500">Tiến độ hiện tại: {progressStatusLabel(item.observedProgressStatus)}</p>
+                            <p className="mt-1 text-[11px] text-slate-500">Tiến độ: {progressStatusLabel(item.observedProgressStatus)}</p>
                           )}
                         </div>
                       </div>
                     </div>
+
                     <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
-                      <span className="truncate text-[11px] text-slate-500">{item.scorePercent != null ? 'Đề xuất theo kết quả' : 'Đề xuất theo tiến độ'}</span>
+                      <span className="truncate text-[11px] text-slate-500">
+                        {isStuck ? 'Đề xuất theo hoạt động' : item.scorePercent != null ? 'Đề xuất theo kết quả + thời gian' : 'Đề xuất theo tiến độ'}
+                      </span>
                       {href ? (
                         <button
                           type="button"
                           onClick={() => router.push(href)}
-                          className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                          className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-700"
                         >
                           {item.actionLabel}
                           <ArrowUpRight className="h-3.5 w-3.5" />
@@ -670,7 +891,9 @@ export function ProgressTab({ course }: ProgressTabProps) {
             </div>
           ) : (
             <div className="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-white/80 px-4 py-4">
-              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${recommendationsFailed ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}>
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                recommendationsFailed ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'
+              }`}>
                 {recommendationsFailed ? <AlertTriangle className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
               </div>
               <p className="text-sm font-medium leading-relaxed text-slate-600">
