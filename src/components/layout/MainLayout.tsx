@@ -22,6 +22,8 @@ import {
   X,
   Sparkles,
   RefreshCw,
+  Swords,
+  Trophy,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
@@ -298,6 +300,22 @@ export default function MainLayout({
           >
             <Calendar className="w-5 h-5" />
             <span className="text-[14px] font-bold">Calendar</span>
+          </Link>
+          <Link
+            href="/quiz-battle"
+            className={`relative flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname.startsWith("/quiz-battle") ? "text-[#5546A8] bg-[#F0EEF9] before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-r before:bg-[#5546A8]" : "text-[#6B7280] hover:bg-gray-50"}`}
+            onClick={handleLinkClick}
+          >
+            <Swords className="w-5 h-5" />
+            <span className="text-[14px] font-bold">Quiz Battle</span>
+          </Link>
+          <Link
+            href="/leaderboard"
+            className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname.startsWith("/leaderboard") ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
+            onClick={handleLinkClick}
+          >
+            <Trophy className="w-5 h-5" />
+            <span className="text-[14px] font-bold">Leaderboard</span>
           </Link>
         </nav>
 
