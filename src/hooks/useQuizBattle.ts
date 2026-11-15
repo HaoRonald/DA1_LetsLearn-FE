@@ -110,7 +110,7 @@ export function useQuizBattle(userId: string) {
   const completed = battle?.status === "completed";
 
   useEffect(() => {
-    if (!battleId || completed) return;
+    if (!battleId) return;
     const id = battleId;
     const generation = session.current.generation;
     const connection = quizBattleService.connection();
@@ -135,7 +135,7 @@ export function useQuizBattle(userId: string) {
       clearTimeout(retry);
       retry = setTimeout(() => void start(), 5000);
     };
-    for (const event of ["PlayerJoined", "PlayerLeft", "BattleStarted", "AnswerReceived", "BattleCompleted"]) connection.on(event, sync);
+    for (const event of ["PlayerJoined", "PlayerLeft", "BattleStarted", "AnswerReceived", "BattleCompleted", "RematchCreated"]) connection.on(event, sync);
     connection.on("RoomClosed", () => {
       if (!disposed && matches(id, generation)) { close(); setError("The host closed this waiting room."); }
     });
@@ -144,7 +144,7 @@ export function useQuizBattle(userId: string) {
     connection.onclose(() => { if (!disposed) { setLive(false); scheduleRetry(); } });
     // Register listeners before connecting; SignalR groups must be rejoined after every reconnect.
     void start();
-    const poll = setInterval(sync, 2500);
+    const poll = setInterval(sync, completed ? 10000 : 2500);
     window.addEventListener("online", sync);
     document.addEventListener("visibilitychange", sync);
     return () => {

@@ -15,6 +15,7 @@ export interface CreateQuestionRequest {
   questionText: string;
   status?: string;
   type: 'Choices Answer' | 'True/False' | 'Short Answer';
+  difficulty?: 'easy' | 'medium' | 'hard';
   defaultMark?: number;
   usage?: number;
   feedbackOfTrue?: string;
@@ -34,6 +35,7 @@ export interface GetQuestionResponse {
   questionText: string;
   status?: string;
   type: string;
+  difficulty?: 'easy' | 'medium' | 'hard';
   defaultMark?: number;
   usage?: number;
   feedbackOfTrue?: string;

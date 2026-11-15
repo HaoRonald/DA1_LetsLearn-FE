@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BookOpen,
   Search,
@@ -29,6 +29,7 @@ import {
   fetchBankQuestions,
   createBankQuestion,
   deleteBankQuestion,
+  updateBankQuestionDifficulty,
   bankQuestionToQuizQuestion,
   updateQuizTopicQuestions,
 } from "@/services/questionBankService";
@@ -103,6 +104,7 @@ interface FormState {
   questionName: string;
   questionText: string;
   status: "Ready" | "Draft";
+  difficulty: "easy" | "medium" | "hard";
   defaultMark: number;
   type: QuestionType;
   multiple: boolean;
@@ -122,6 +124,7 @@ const emptyForm = (type: QuestionType): FormState => ({
   questionName: "",
   questionText: "",
   status: "Ready",
+  difficulty: "medium",
   defaultMark: 1,
   type,
   multiple: false,
@@ -179,15 +182,16 @@ export function TeacherQuizQuestionBank({
 
   // Add-to-quiz loading: store which question id is being added
   const [addingId, setAddingId] = useState<string | null>(null);
+  const [updatingDifficultyIds, setUpdatingDifficultyIds] = useState<Set<string>>(() => new Set());
 
   // ── Derive: which question IDs are already in the quiz ──────────────────────
 
-  const getQuestionFingerprint = (q: any) => {
+  const getQuestionFingerprint = (q: Question | QuizQuestion) => {
     const text = (q.questionText || '').trim();
     const name = (q.questionName || '').trim();
     const type = q.type;
     const choicesStr = (q.choices || [])
-      .map((c: any) => (c.text || '').trim())
+      .map((c) => (c.text || '').trim())
       .sort()
       .join('|');
     return `${text}::${name}::${type}::${choicesStr}`;
@@ -199,21 +203,23 @@ export function TeacherQuizQuestionBank({
 
   // ── Fetch bank ──────────────────────────────────────────────────────────────
 
-  const loadBank = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await fetchBankQuestions(courseId);
-      setQuestions(data);
-    } catch {
-      toast.error("Failed to load question bank");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [courseId]);
-
   useEffect(() => {
-    if (courseId) loadBank();
-  }, [courseId, loadBank]);
+    if (!courseId) return;
+    let active = true;
+    const load = async () => {
+      setIsLoading(true);
+      try {
+        const data = await fetchBankQuestions(courseId);
+        if (active) setQuestions(data);
+      } catch {
+        if (active) toast.error("Failed to load question bank");
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+    void load();
+    return () => { active = false; };
+  }, [courseId]);
 
   // ── Type picker logic ────────────────────────────────────────────────────────
 
@@ -247,6 +253,7 @@ export function TeacherQuizQuestionBank({
           form.questionName || `Q - ${form.questionText.slice(0, 40)}`,
         questionText: form.questionText,
         status: form.status,
+        difficulty: form.difficulty,
         defaultMark: form.defaultMark,
         multiple: form.multiple,
         correctAnswer: form.correctAnswer,
@@ -278,9 +285,29 @@ export function TeacherQuizQuestionBank({
       await deleteBankQuestion(id);
       setQuestions((prev) => prev.filter((q) => q.id !== id));
       toast.success("Question deleted");
-    } catch (err: any) {
-      const msg = err.response?.data?.message || err.response?.data || "Failed to delete question";
+    } catch (err: unknown) {
+      const data = err && typeof err === "object" && "response" in err
+        ? (err as { response?: { data?: { message?: string } | string } }).response?.data
+        : undefined;
+      const msg = typeof data === "string" ? data : data?.message ?? "Failed to delete question";
       toast.error(msg);
+    }
+  };
+
+  const handleDifficultyChange = async (id: string, difficulty: FormState["difficulty"]) => {
+    setUpdatingDifficultyIds((current) => new Set(current).add(id));
+    try {
+      const updated = await updateBankQuestionDifficulty(id, difficulty);
+      setQuestions((prev) => prev.map((question) => question.id === id ? { ...question, difficulty: updated.difficulty ?? difficulty } : question));
+      toast.success("Question difficulty updated");
+    } catch {
+      toast.error("Failed to update question difficulty");
+    } finally {
+      setUpdatingDifficultyIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
     }
   };
 
@@ -436,6 +463,17 @@ export function TeacherQuizQuestionBank({
                 >
                   <option value="Ready">Ready</option>
                   <option value="Draft">Draft</option>
+                </select>
+              </FieldRow>
+              <FieldRow label="Difficulty">
+                <select
+                  value={form.difficulty}
+                  onChange={(e) => setForm((p) => ({ ...p, difficulty: e.target.value as FormState["difficulty"] }))}
+                  className="border border-[#E5E7EB] rounded-lg px-4 py-2 text-[14px] bg-white focus:outline-none min-w-[160px]"
+                >
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
                 </select>
               </FieldRow>
               <FieldRow label="Default mark">
@@ -813,6 +851,18 @@ export function TeacherQuizQuestionBank({
                             {q.questionName}
                           </p>
                         )}
+                        <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${q.difficulty === "easy" ? "bg-emerald-50 text-emerald-700" : q.difficulty === "hard" ? "bg-rose-50 text-rose-700" : "bg-slate-100 text-slate-600"}`}>
+                          {q.difficulty ?? "medium"}
+                        </span>
+                        <select
+                          aria-label={`Set difficulty for ${q.questionName || `question ${idx + 1}`}`}
+                          value={q.difficulty ?? "medium"}
+                          disabled={updatingDifficultyIds.has(q.id)}
+                          onChange={(event) => void handleDifficultyChange(q.id, event.target.value as FormState["difficulty"])}
+                          className="ml-2 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600 disabled:opacity-50"
+                        >
+                          <option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option>
+                        </select>
                       </td>
                       <td className="p-4 font-bold text-[#374151]">
                         {q.defaultMark ?? 1}

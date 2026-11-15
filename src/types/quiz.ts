@@ -2,6 +2,7 @@
 
 export type QuestionStatus = 'Ready' | 'Draft';
 export type QuestionType = 'Choices Answer' | 'True/False' | 'Short Answer';
+export type QuestionDifficulty = 'easy' | 'medium' | 'hard';
 
 export interface QuestionChoice {
   id: string | null;
@@ -19,6 +20,7 @@ export interface Question {
   questionText: string;
   status: QuestionStatus;
   type: QuestionType;
+  difficulty?: QuestionDifficulty;
   defaultMark: number;
   usage: number;
   createdAt?: string;
@@ -43,6 +45,7 @@ export interface CreateQuestionPayload {
   questionText: string;
   status: QuestionStatus;
   type: QuestionType;
+  difficulty: QuestionDifficulty;
   defaultMark: number;
   usage: 0;
   feedbackOfTrue: string | null;

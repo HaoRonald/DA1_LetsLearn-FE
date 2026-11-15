@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Trophy } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
 import { useAuth } from "@/contexts/AuthContext";
+import { courseApi, type CourseResponse } from "@/services/courseService";
 import { quizBattleService, type LeaderboardRow } from "@/services/quizBattleService";
 import { battleError } from "@/hooks/useQuizBattle";
 
@@ -16,32 +17,47 @@ function LeaderboardAccount() {
   const { user, isAuthenticated, isLoading } = useAuth();
   if (isLoading) return <MainLayout headerTitle="Leaderboard"><p className="p-8">Loading your account...</p></MainLayout>;
   if (!isAuthenticated || !user) return <MainLayout headerTitle="Leaderboard"><div className="p-8 text-center"><Link href="/login" className="font-bold text-indigo-600">Sign in to view the leaderboard</Link></div></MainLayout>;
-  return <Leaderboard key={user.id} />;
+  return <Leaderboard key={user.id} userId={user.id} enrolledCourseIds={user.enrollments?.map(enrollment => enrollment.courseId) ?? []} />;
 }
 
-function Leaderboard() {
+function Leaderboard({ userId, enrolledCourseIds }: { userId: string; enrolledCourseIds: string[] }) {
+  const enrolledCourseKey = enrolledCourseIds.join("|");
   const [period, setPeriod] = useState<"all" | "month" | "week">("all");
+  const [courseId, setCourseId] = useState("");
+  const [courses, setCourses] = useState<CourseResponse[]>([]);
   const [reload, setReload] = useState(0);
   // Key requests in the rendered state so switching a tab never shows the previous period's rows.
   const [response, setResponse] = useState<{ key: string; rows: LeaderboardRow[]; error: string } | null>(null);
-  const key = `${period}:${reload}`;
+  const key = `${period}:${courseId}:${reload}`;
   const loading = response?.key !== key;
   const rows = loading ? [] : response?.rows ?? [];
   const error = loading ? "" : response?.error;
   useEffect(() => {
     let alive = true;
-    quizBattleService.leaderboard(period)
+    courseApi.getAll().then(result => {
+      const enrolled = new Set(enrolledCourseKey ? enrolledCourseKey.split("|") : []);
+      if (alive) setCourses(result.data.filter(course => course.isPublished && (course.creatorId === userId || enrolled.has(course.id))));
+    }).catch(() => { if (alive) setCourses([]); });
+    return () => { alive = false; };
+  }, [userId, enrolledCourseKey]);
+  useEffect(() => {
+    let alive = true;
+    quizBattleService.leaderboard(period, courseId || undefined)
       .then(rows => { if (alive) setResponse({ key, rows, error: "" }); })
       .catch(e => { if (alive) setResponse({ key, rows: [], error: battleError(e) }); });
     return () => { alive = false; };
-  }, [period, key]);
+  }, [period, courseId, key]);
 
   return <MainLayout headerTitle="Leaderboard">
     <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6">
       <Link href="/quiz-battle" className="mb-6 inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-indigo-700"><ArrowLeft className="h-4 w-4"/>Back to Quiz Battle</Link>
       <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div><div className="mb-2 inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-amber-700"><Trophy className="h-4 w-4"/>Learning achievements</div><h1 className="text-3xl font-black tracking-tight text-gray-900">Leaderboard</h1><p className="mt-2 text-gray-500">Points from completed lessons, quizzes, assignments, and Quiz Battles.</p></div>
-        <div className="flex rounded-xl border border-gray-200 bg-white p-1">{(["all", "month", "week"] as const).map(value => <button key={value} onClick={() => setPeriod(value)} aria-pressed={period === value} className={`rounded-lg px-3 py-2 text-sm font-bold ${period === value ? "bg-indigo-600 text-white" : "text-gray-500 hover:bg-gray-50"}`}>{value === "all" ? "All time" : value === "month" ? "Last 30 days" : "Last 7 days"}</button>)}</div>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="sr-only" htmlFor="leaderboard-course">Course</label>
+          <select id="leaderboard-course" value={courseId} onChange={event => setCourseId(event.target.value)} className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-400"><option value="">All courses</option>{courses.map(course => <option key={course.id} value={course.id}>{course.title}</option>)}</select>
+          <div className="flex rounded-xl border border-gray-200 bg-white p-1">{(["all", "month", "week"] as const).map(value => <button key={value} onClick={() => setPeriod(value)} aria-pressed={period === value} className={`rounded-lg px-3 py-2 text-sm font-bold ${period === value ? "bg-indigo-600 text-white" : "text-gray-500 hover:bg-gray-50"}`}>{value === "all" ? "All time" : value === "month" ? "Last 30 days" : "Last 7 days"}</button>)}</div>
+        </div>
       </div>
       <section aria-label="Learning leaderboard" className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
         <div className="grid grid-cols-[54px_minmax(0,1fr)_100px] gap-3 border-b border-gray-100 bg-gray-50 px-5 py-3 text-xs font-extrabold uppercase tracking-wide text-gray-400"><span>Rank</span><span>Learner</span><span className="text-right">Points</span></div>

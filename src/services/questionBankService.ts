@@ -25,6 +25,7 @@ interface CreateInput {
   questionName: string;
   questionText: string;
   status: 'Ready' | 'Draft';
+  difficulty: 'easy' | 'medium' | 'hard';
   defaultMark: number;
   multiple: boolean;
   correctAnswer: boolean;
@@ -40,6 +41,7 @@ export function createBankQuestion(input: CreateInput): Promise<Question> {
     questionName: input.questionName || `Q - ${input.questionText.slice(0, 40)}`,
     questionText: input.questionText,
     status: input.status,
+    difficulty: input.difficulty,
     type: input.type,
     defaultMark: input.defaultMark,
     usage: 0,
@@ -72,6 +74,15 @@ export function createBankQuestion(input: CreateInput): Promise<Question> {
 
 export function deleteBankQuestion(id: string): Promise<void> {
   return axiosInstance.delete(`/question/${id}`).then(() => undefined);
+}
+
+export function updateBankQuestionDifficulty(
+  id: string,
+  difficulty: 'easy' | 'medium' | 'hard',
+): Promise<Question> {
+  return axiosInstance
+    .patch<Question>(`/question/${id}/difficulty`, { difficulty })
+    .then((r) => r.data);
 }
 
 // ── Quiz topic update ──────────────────────────────────────────────────────────
