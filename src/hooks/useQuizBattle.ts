@@ -135,7 +135,7 @@ export function useQuizBattle(userId: string) {
       clearTimeout(retry);
       retry = setTimeout(() => void start(), 5000);
     };
-    for (const event of ["PlayerJoined", "PlayerLeft", "BattleStarted", "AnswerReceived", "BattleCompleted", "RematchCreated"]) connection.on(event, sync);
+    for (const event of ["PlayerJoined", "PlayerLeft", "BattleStarted", "BattleQuestionChanged", "AnswerReceived", "BattleCompleted", "RematchCreated"]) connection.on(event, sync);
     connection.on("RoomClosed", () => {
       if (!disposed && matches(id, generation)) { close(); setError("The host closed this waiting room."); }
     });
@@ -189,14 +189,14 @@ export function useQuizBattle(userId: string) {
     finally { actionPending.current = false; if (session.current.alive) setBusy(false); }
   };
 
-  const answer = async (choiceId: string) => {
+  const answer = async (choiceId: string, useRocket = false) => {
     const state = latest.current;
     if (actionPending.current || !state || state.status !== "active" || state.currentQuestionIndex < 0) return;
     actionPending.current = true;
     const generation = session.current.generation;
     setBusy(true); setError("");
     try {
-      const result = await quizBattleService.answer(state.id, state.currentQuestionIndex, choiceId);
+      const result = await quizBattleService.answer(state.id, state.currentQuestionIndex, choiceId, useRocket);
       if (matches(state.id, generation)) setReceipt({ battleId: state.id, answer: result });
     } catch (e) { if (matches(state.id, generation)) setError(battleError(e)); }
     finally {
@@ -220,9 +220,9 @@ export function useQuizBattle(userId: string) {
 
   const serverNow = snapshot ? snapshot.serverMs + Math.max(0, tick - snapshot.localMs) : 0;
   const secondsLeft = battle?.deadline ? Math.max(0, Math.ceil((Date.parse(battle.deadline) - serverNow) / 1000)) : 0;
-  const joinSecondsLeft = battle?.joinEndsAt ? Math.max(0, Math.ceil((Date.parse(battle.joinEndsAt) - serverNow) / 1000)) : 0;
   const startsIn = battle?.startedAt ? Math.max(0, Math.ceil((Date.parse(battle.startedAt) - serverNow) / 1000)) : 0;
   const myAnswer = receipt && receipt.battleId === battle?.id && receipt.answer.questionIndex === battle?.currentQuestionIndex
     ? receipt.answer : null;
-  return { battle, busy: busy || restoring, error: error || syncError, live, secondsLeft, joinSecondsLeft, startsIn, myAnswer, run, answer, leave, close, setError };
+  const answeredCurrentQuestion = Boolean(battle?.answeredCurrentQuestion || myAnswer);
+  return { battle, busy: busy || restoring, error: error || syncError, live, secondsLeft, startsIn, myAnswer, answeredCurrentQuestion, run, answer, leave, close, setError };
 }
