@@ -185,9 +185,11 @@ function AiDailyBooster() {
 export default function MainLayout({
   children,
   headerTitle,
+  immersive = false,
 }: {
   children: React.ReactNode;
   headerTitle?: React.ReactNode;
+  immersive?: boolean;
 }) {
   const { user, isAuthenticated, logout } = useAuth();
   const [isEnrolledOpen, setIsEnrolledOpen] = useState(true);
@@ -213,7 +215,7 @@ export default function MainLayout({
       /* ADMIN SIDEBAR */
       <div className="flex flex-col h-full">
         <div className="px-6 mb-8">
-          <div className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-xl border border-red-100">
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${immersive ? "border-rose-300/15 bg-rose-300/10 text-rose-200" : "border-red-100 bg-red-50 text-red-600"}`}>
             <ShieldCheck className="w-5 h-5" />
             <span className="text-[12px] font-black uppercase tracking-wider">
               Admin Control
@@ -222,12 +224,12 @@ export default function MainLayout({
         </div>
 
         <nav className="space-y-1 px-3 mb-6">
-          <p className="px-4 text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">
+          <p className={`px-4 text-[11px] font-black uppercase tracking-widest mb-2 ${immersive ? "text-slate-500" : "text-gray-400"}`}>
             Main Menu
           </p>
           <Link
             href="/admin"
-            className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "dashboard" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`}
+            className={sidebarLinkClass(pathname === "/admin" && activeTab === "dashboard", `flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "dashboard" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`)}
             onClick={handleLinkClick}
           >
             <LayoutDashboard className="w-5 h-5" />
@@ -235,7 +237,7 @@ export default function MainLayout({
           </Link>
           <Link
             href="/admin?tab=users"
-            className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "users" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`}
+            className={sidebarLinkClass(pathname === "/admin" && activeTab === "users", `flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "users" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`)}
             onClick={handleLinkClick}
           >
             <Users className="w-5 h-5" />
@@ -243,7 +245,7 @@ export default function MainLayout({
           </Link>
           <Link
             href="/admin?tab=courses"
-            className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "courses" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`}
+            className={sidebarLinkClass(pathname === "/admin" && activeTab === "courses", `flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "courses" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`)}
             onClick={handleLinkClick}
           >
             <BookOpen className="w-5 h-5" />
@@ -252,12 +254,12 @@ export default function MainLayout({
         </nav>
 
         <nav className="space-y-1 px-3 mb-6">
-          <p className="px-4 text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">
+          <p className={`px-4 text-[11px] font-black uppercase tracking-widest mb-2 ${immersive ? "text-slate-500" : "text-gray-400"}`}>
             Analysis
           </p>
           <Link
             href="/admin?tab=statistics"
-            className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "statistics" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`}
+            className={sidebarLinkClass(pathname === "/admin" && activeTab === "statistics", `flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname === "/admin" && activeTab === "statistics" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:bg-gray-50"}`)}
             onClick={handleLinkClick}
           >
             <BarChart3 className="w-5 h-5" />
@@ -266,10 +268,10 @@ export default function MainLayout({
         </nav>
 
         <div className="mt-auto px-3">
-          <div className="border-t border-[#E5E7EB] pt-4">
+          <div className={`border-t pt-4 ${immersive ? "border-white/10" : "border-[#E5E7EB]"}`}>
             <Link
               href="/settings"
-              className="flex items-center gap-4 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+              className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${immersive ? "text-slate-300 hover:bg-white/[0.06]" : "text-gray-600 hover:bg-gray-50"}`}
               onClick={handleLinkClick}
             >
               <Settings className="w-5 h-5" />
@@ -287,7 +289,7 @@ export default function MainLayout({
         <nav className="space-y-1 px-3 mb-6">
           <Link
             href="/"
-            className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${isHomeActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
+            className={sidebarLinkClass(isHomeActive, `flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${isHomeActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`)}
             onClick={handleLinkClick}
           >
             <HomeIcon className="w-5 h-5" />
@@ -295,7 +297,7 @@ export default function MainLayout({
           </Link>
           <Link
             href="/calendar"
-            className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${isCalendarActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
+            className={sidebarLinkClass(isCalendarActive, `flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${isCalendarActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`)}
             onClick={handleLinkClick}
           >
             <Calendar className="w-5 h-5" />
@@ -303,7 +305,7 @@ export default function MainLayout({
           </Link>
           <Link
             href="/quiz-battle"
-            className={`relative flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname.startsWith("/quiz-battle") ? "text-[#5546A8] bg-[#F0EEF9] before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-r before:bg-[#5546A8]" : "text-[#6B7280] hover:bg-gray-50"}`}
+            className={sidebarLinkClass(pathname.startsWith("/quiz-battle"), `relative flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname.startsWith("/quiz-battle") ? "text-[#5546A8] bg-[#F0EEF9] before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-r before:bg-[#5546A8]" : "text-[#6B7280] hover:bg-gray-50"}`)}
             onClick={handleLinkClick}
           >
             <Swords className="w-5 h-5" />
@@ -311,7 +313,7 @@ export default function MainLayout({
           </Link>
           <Link
             href="/leaderboard"
-            className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname.startsWith("/leaderboard") ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
+            className={sidebarLinkClass(pathname.startsWith("/leaderboard"), `flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${pathname.startsWith("/leaderboard") ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`)}
             onClick={handleLinkClick}
           >
             <Trophy className="w-5 h-5" />
@@ -323,14 +325,14 @@ export default function MainLayout({
         <div className="mb-6">
           <button
             onClick={() => setIsEnrolledOpen(!isEnrolledOpen)}
-            className="w-full flex items-center justify-between px-6 py-2 text-[#6B7280] hover:bg-gray-50 transition-colors mb-1"
+            className={`w-full flex items-center justify-between px-6 py-2 transition-colors mb-1 ${immersive ? "text-slate-300 hover:bg-white/[0.06]" : "text-[#6B7280] hover:bg-gray-50"}`}
           >
             <div className="flex items-center gap-3">
-              <ChevronDown
+                <ChevronDown
                 className={`w-4 h-4 transition-transform ${!isEnrolledOpen ? "-rotate-90" : ""}`}
               />
               <GraduationCap className="w-5 h-5" />
-              <span className="text-[14px] font-bold text-[#374151]">
+              <span className={`text-[14px] font-bold ${immersive ? "text-slate-200" : "text-[#374151]"}`}>
                 {isAdminOrTeacher ? "Teaching" : "Enrolled"}
               </span>
             </div>
@@ -340,7 +342,7 @@ export default function MainLayout({
             <div className="space-y-1">
               <Link
                 href="/todo"
-                className={`flex items-center gap-4 px-9 py-2.5 transition-colors ${isTodoActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`}
+                className={sidebarLinkClass(isTodoActive, `flex items-center gap-4 px-9 py-2.5 transition-colors ${isTodoActive ? "text-[#3B82F6] bg-[#EEF2FF]" : "text-[#6B7280] hover:bg-gray-50"}`)}
                 onClick={handleLinkClick}
               >
                 <ListTodo className="w-5 h-5" />
@@ -353,10 +355,10 @@ export default function MainLayout({
         </div>
 
         <div className="mt-auto px-3">
-          <div className="border-t border-[#E5E7EB] pt-4">
+          <div className={`border-t pt-4 ${immersive ? "border-white/10" : "border-[#E5E7EB]"}`}>
             <Link
               href="/settings"
-              className="flex items-center gap-4 px-3 py-2.5 rounded-lg text-[#6B7280] hover:bg-gray-50 transition-colors"
+              className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${immersive ? "text-slate-300 hover:bg-white/[0.06]" : "text-[#6B7280] hover:bg-gray-50"}`}
               onClick={handleLinkClick}
             >
               <Settings className="w-5 h-5" />
@@ -375,13 +377,35 @@ export default function MainLayout({
   const isCourseActive = pathname.startsWith("/courses");
 
   const isAdminOrTeacher = user?.role === "Admin" || user?.role === "Teacher";
+  const sidebarLinkClass = (active: boolean, regular: string) => immersive
+    ? `flex items-center gap-4 px-3 py-2.5 rounded-lg transition-colors ${active ? "text-white bg-white/10" : "text-slate-300 hover:bg-white/[0.06]"}`
+    : regular;
+
+  useEffect(() => {
+    if (!immersive || !isMobileSidebarOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsMobileSidebarOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [immersive, isMobileSidebarOpen]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-white font-sans text-black">
+    <div className={`min-h-screen flex flex-col font-sans ${immersive ? "bg-[#111318] text-white" : "bg-white text-black"}`}>
       {/* --- TOP NAVIGATION BAR --- */}
-      <header className="h-16 border-b border-gray-200 flex items-center justify-between px-4 lg:px-6 bg-white shrink-0 z-20 relative">
+      <header className={`h-16 flex items-center justify-between px-4 lg:px-6 shrink-0 z-20 relative ${immersive ? "border-b border-white/10 bg-[#111318] text-white" : "border-b border-gray-200 bg-white"}`}>
         <div className="flex items-center gap-4">
-          {!isHomeActive && (
+          {immersive ? (
+            <button
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="rounded-lg p-2 text-slate-200 transition hover:bg-white/10 hover:text-white"
+              aria-label="Open navigation menu"
+              aria-expanded={isMobileSidebarOpen}
+              aria-controls="main-navigation-drawer"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          ) : !isHomeActive && (
             <button
               onClick={() => router.back()}
               className="p-2 hover:bg-gray-100 rounded-md text-[#6B7280] transition-colors"
@@ -390,14 +414,16 @@ export default function MainLayout({
               <ArrowLeft className="w-5 h-5" />
             </button>
           )}
-          <button
+          {!immersive && <button
             onClick={() => setIsMobileSidebarOpen(true)}
             className="p-2 hover:bg-gray-100 rounded-md text-[#6B7280] transition-colors md:hidden"
             aria-label="Open sidebar"
           >
             <Menu className="w-5 h-5" />
-          </button>
-          {headerTitle || (
+          </button>}
+          {headerTitle ? (
+            <span className={immersive ? "text-base font-bold text-white" : ""}>{headerTitle}</span>
+          ) : (
             <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90 select-none">
               <img
                 src="/logo.jpg"
@@ -412,7 +438,7 @@ export default function MainLayout({
         </div>
 
         <div className="flex items-center gap-3 md:gap-5">
-          {isAdminOrTeacher && (
+          {!immersive && isAdminOrTeacher && (
             <Link
               href="/courses/create"
               className="p-2 hover:bg-gray-100 rounded-md text-[#6B7280] transition-colors"
@@ -420,11 +446,11 @@ export default function MainLayout({
               <Plus className="w-5 h-5" />
             </Link>
           )}
-          <GlobalChatDrawer />
+          {!immersive && <GlobalChatDrawer />}
           
-          <NotificationDropdown />
+          {!immersive && <NotificationDropdown />}
           
-          <AiDailyBooster />
+          {!immersive && <AiDailyBooster />}
 
           <div className="relative">
             <div
@@ -508,20 +534,21 @@ export default function MainLayout({
       </header>
 
       {/* --- MAIN LAYOUT (SIDEBAR + CONTENT) --- */}
-      <div className="flex flex-1 overflow-hidden h-[calc(100vh-64px)] relative">
+      <div className={`flex flex-1 overflow-hidden h-[calc(100vh-64px)] relative ${immersive ? "bg-[#111318]" : ""}`}>
         {/* SIDEBAR */}
-        <aside className="w-64 border-r border-[#E5E7EB] bg-white flex-shrink-0 hidden md:flex flex-col py-4 overflow-y-auto">
+        {!immersive && <aside className="w-64 border-r border-[#E5E7EB] bg-white flex-shrink-0 hidden md:flex flex-col py-4 overflow-y-auto">
           {renderSidebarContent()}
-        </aside>
+        </aside>}
 
         {/* CONTENT AREA */}
-        <main className="flex-1 overflow-y-auto bg-white relative">
+        <main className={`flex-1 overflow-y-auto relative ${immersive ? "bg-[#111318]" : "bg-white"}`}>
           {children}
         </main>
 
         {/* Mobile Sidebar Drawer */}
-        <div
-          className={`fixed inset-0 z-50 flex md:hidden transition-opacity duration-300 ${
+        {(isMobileSidebarOpen || !immersive) && <div
+          id="main-navigation-drawer"
+          className={`fixed inset-0 z-50 flex transition-opacity duration-300 ${immersive ? "" : "md:hidden"} ${
             isMobileSidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
           }`}
         >
@@ -533,18 +560,18 @@ export default function MainLayout({
 
           {/* Drawer content */}
           <aside
-            className={`relative w-64 max-w-xs bg-white h-full flex flex-col py-4 shadow-xl border-r border-[#E5E7EB] z-10 transition-transform duration-300 ${
+            className={`relative w-64 max-w-xs h-full flex flex-col py-4 shadow-xl z-10 transition-transform duration-300 ${immersive ? "border-r border-white/10 bg-[#17191f]" : "border-r border-[#E5E7EB] bg-white"} ${
               isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
             }`}
           >
             {/* Header / close button for mobile drawer */}
-            <div className="flex items-center justify-between px-6 pb-4 border-b border-gray-100 mb-4">
-              <span className="text-[14px] font-bold text-gray-400 uppercase tracking-widest">
+            <div className={`flex items-center justify-between px-6 pb-4 mb-4 ${immersive ? "border-b border-white/10" : "border-b border-gray-100"}`}>
+              <span className={`text-[14px] font-bold uppercase tracking-widest ${immersive ? "text-slate-400" : "text-gray-400"}`}>
                 Menu
               </span>
               <button
                 onClick={() => setIsMobileSidebarOpen(false)}
-                className="p-1 hover:bg-gray-100 rounded-md text-[#6B7280]"
+                className={`rounded-md p-1 ${immersive ? "text-slate-300 hover:bg-white/10" : "text-[#6B7280] hover:bg-gray-100"}`}
                 aria-label="Close sidebar"
               >
                 <X className="w-5 h-5" />
@@ -554,7 +581,7 @@ export default function MainLayout({
               {renderSidebarContent()}
             </div>
           </aside>
-        </div>
+        </div>}
       </div>
     </div>
   );
